@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator dodawania pisemnego</title>
+  <style>
+    /* =========================================================
+       ZMIENNE KOLORYSTYCZNE I PODSTAWOWA TYPOGRAFIA (OFFLINE)
+       ========================================================= */
+    :root {
+      --bg-page: #f1f5f9;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-soft: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --accent-carry: #dc2626;
+      --accent-carry-bg: #fef2f2;
+      --accent-result: #047857;
+      --accent-highlight: rgba(254, 240, 138, 0.65);
+      --accent-highlight-border: #eab308;
+      --paper-bg: #fffef9;
+      --paper-grid: #cfe2f3;
+      --paper-margin: #fca5a5;
+      --cell-size: 46px;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 20px 16px 40px;
+    }
+
+    /* =========================================================
+       UKŁAD GŁÓWNY I NAGŁÓWEK
+       ========================================================= */
+    .app-wrapper {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .app-title-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .app-logo {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+      flex-shrink: 0;
+    }
+
+    .app-header h1 {
+      font-size: clamp(1.45rem, 3vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .app-subtitle {
+      color: var(--text-muted);
+      font-size: 0.98rem;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* =========================================================
+       KARTY (PANELE)
+       ========================================================= */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-md);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--text-main);
+    }
+
+    /* =========================================================
+       PANEL WPROWADZANIA LICZB
+       ========================================================= */
+    .presets-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .btn-preset {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .btn-preset:hover {
+      background: #dbeafe;
+      transform: translateY(-1px);
+    }
+
+    .btn-preset:active {
+      transform: translateY(0);
+    }
+
+    .inputs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .number-input {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-main);
+      background: #f8fafc;
+      border: 2px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .number-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #ffffff;
+    }
+
+    .number-input.is-invalid {
+      border-color: var(--accent-carry);
+      background: var(--accent-carry-bg);
+    }
+
+    .btn-remove {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid #fecaca;
+      background: #fef2f2;
+      color: #dc2626;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .btn-remove:hover:not(:disabled) {
+      background: #fee2e2;
+    }
+
+    .btn-remove:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      border-color: var(--border-soft);
+      background: #f8fafc;
+      color: #94a3b8;
+    }
+
+    .input-actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      flex: 1;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: #f8fafc;
+      color: var(--text-main);
+      border-color: #cbd5e1;
+    }
+
+    .btn-secondary:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .error-box {
+      display: none;
+      background: var(--accent-carry-bg);
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      margin-bottom: 14px;
+    }
+
+    .error-box.visible {
+      display: block;
+    }
+
+    .options-box {
+      border-top: 1px solid var(--border-soft);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .hint-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    /* =========================================================
+       KARTKA Z ZESZYTU (WIZUALIZACJA)
+       ========================================================= */
+    .viz-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid #bfdbfe;
+    }
+
+    .speed-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+    }
+
+    .speed-select {
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: var(--text-main);
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Kontener przypominający kartkę w kratkę z czerwonym marginesem */
+    .notebook-shell {
+      position: relative;
+      background-color: var(--paper-bg);
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.04), var(--shadow-sm);
+      overflow-x: auto;
+      padding: 24px 24px 28px 44px;
+      margin-bottom: 18px;
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Czerwona pionowa linia marginesu zeszytowego */
+    .notebook-shell::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 28px;
+      width: 2px;
+      background-color: var(--paper-margin);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    /* Właściwa siatka kratkowa (1 znak = 1 kratka) */
+    .math-grid {
+      display: grid;
+      border-top: 1px solid var(--paper-grid);
+      border-left: 1px solid var(--paper-grid);
+      background-color: var(--paper-bg);
+      width: max-content;
+      margin: 0 auto;
+    }
+
+    .grid-cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      border-right: 1px solid var(--paper-grid);
+      border-bottom: 1px solid var(--paper-grid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #1e293b;
+      position: relative;
+      transition: background-color 0.25s ease;
+      user-select: none;
+    }
+
+    /* Nagłówki rzędów wielkości (T, S, D, J, 0,1...) */
+    .grid-cell.cell-header {
+      height: 30px;
+      font-family: var(--font-sans);
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #64748b;
+      background-color: rgba(241, 245, 249, 0.75);
+      letter-spacing: -0.02em;
+    }
+
+    /* Wiersz przeniesień („w pamięci”) */
+    .grid-cell.cell-carry {
+      height: 36px;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--accent-carry);
+    }
+
+    .carry-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: #fee2e2;
+      border: 1.5px solid #f87171;
+      color: #b91c1c;
+      font-size: 0.92rem;
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .cell-carry.is-new-carry .carry-pill {
+      background: #dc2626;
+      color: #ffffff;
+      border-color: #991b1b;
+      box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.2);
+    }
+
+    /* Znak dodawania '+' */
+    .grid-cell.cell-plus {
+      color: var(--primary);
+      font-size: 1.65rem;
+      font-weight: 800;
+    }
+
+    /* Dopisane zera pomocnicze w ułamkach dziesiętnych */
+    .grid-cell.cell-padded-zero {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .grid-cell.cell-padded-zero span {
+      border-bottom: 1.5px dashed #cbd5e1;
+      line-height: 1.1;
+    }
+
+    /* Przecinek dziesiętny */
+    .grid-cell.cell-comma {
+      color: #0f172a;
+      font-size: 1.7rem;
+      align-items: flex-end;
+      padding-bottom: 5px;
+    }
+
+    /* Kreska dodawania pod ostatnim składnikiem */
+    .grid-cell.row-last-addend {
+      border-bottom: 3.5px solid #0f172a;
+    }
+
+    /* Wiersz wyniku */
+    .grid-cell.cell-result {
+      color: var(--accent-result);
+      font-size: 1.65rem;
+      font-weight: 800;
+      background-color: rgba(236, 253, 245, 0.45);
+    }
+
+    .result-digit-pop {
+      animation: popIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Podświetlenie aktywnie liczonej kolumny */
+    .grid-cell.col-active {
+      background-color: var(--accent-highlight) !important;
+    }
+
+    .grid-cell.cell-header.col-active {
+      background-color: #fde047 !important;
+      color: #713f12;
+    }
+
+    .grid-cell.cell-result.col-active {
+      background-color: #bbf7d0 !important;
+      color: #065f46;
+    }
+
+    @keyframes popIn {
+      0% {
+        transform: scale(0.45);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* =========================================================
+       PANEL WYJAŚNIENIA DYDAKTYCZNEGO
+       ========================================================= */
+    .explanation-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid var(--primary);
+      border-radius: var(--radius-md);
+      padding: 15px 18px;
+      margin-bottom: 18px;
+      min-height: 92px;
+      transition: border-left-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .explanation-card.is-done {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      border-left-color: var(--accent-result);
+    }
+
+    .explanation-title {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .explanation-card.is-done .explanation-title {
+      color: var(--accent-result);
+    }
+
+    .explanation-body {
+      font-size: 1rem;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    .chip {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-size: 0.96em;
+    }
+
+    .chip-num {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .chip-carry {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .chip-res {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    /* =========================================================
+       PRZYCISKI STEROWANIA KROKAMI
+       ========================================================= */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .btn-ctrl {
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-ctrl:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }
+
+    .btn-ctrl:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ctrl-primary {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .btn-ctrl-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .btn-ctrl-play {
+      background: #0f766e;
+      color: #ffffff;
+      border-color: #0f766e;
+      min-width: 124px;
+    }
+
+    .btn-ctrl-play:hover:not(:disabled) {
+      background: #115e59;
+      border-color: #115e59;
+    }
+
+    .btn-ctrl-play.is-playing {
+      background: #d97706;
+      border-color: #d97706;
+    }
+
+    .btn-ctrl-play.is-playing:hover:not(:disabled) {
+      background: #b45309;
+      border-color: #b45309;
+    }
+
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      justify-content: center;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-soft);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    /* =========================================================
+       RESPONSYWNOŚĆ DLA MNIEJSZYCH EKRANÓW
+       ========================================================= */
+    @media (max-width: 600px) {
+      :root {
+        --cell-size: 38px;
+      }
+
+      body {
+        padding: 14px 10px 30px;
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .notebook-shell {
+        padding: 18px 14px 20px 34px;
+      }
+
+      .notebook-shell::before {
+        left: 20px;
+      }
+
+      .grid-cell {
+        font-size: 1.3rem;
+      }
+
+      .grid-cell.cell-result {
+        font-size: 1.35rem;
+      }
+
+      .controls-bar {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      #btn-show-all {
+        grid-column: span 2;
+      }
+    }
+  
+    /* =========================================================
+       PRZYCISK POWROTU DO MENU GŁÓWNEGO
+       ========================================================= */
+    .top-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .btn-back-menu {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 15px;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #1e293b;
+      border: 1.5px solid #cbd5e1;
+      text-decoration: none;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-back-menu:hover,
+    .btn-back-menu:focus-visible {
+      background: #eff6ff;
+      border-color: #2563eb;
+      color: #2563eb;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <nav class="top-nav-bar" aria-label="Nawigacja główna">
+      <a href="index.html" class="btn-back-menu" title="Wróć do menu głównego">← Menu</a>
+    </nav>
+
+    <!-- NAGŁÓWEK APLIKACJI -->
+    <header class="app-header">
+      <div class="app-title-row">
+        <div class="app-logo" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </div>
+        <h1>Kalkulator dodawania pisemnego</h1>
+      </div>
+      <p class="app-subtitle">Wpisz liczby i zobacz krok po kroku, jak obliczyć ich sumę sposobem pisemnym na kartce w kratkę.</p>
+    </header>
+
+    <main class="main-grid">
+      <!-- LEWY PANEL: WPROWADZANIE LICZB I OPCJE -->
+      <section class="card" aria-label="Wprowadzanie liczb">
+        <h2 class="card-title">1. Wpisz liczby do dodania</h2>
+
+        <div class="presets-label">Gotowe przykłady:</div>
+        <div class="presets-grid">
+          <button type="button" class="btn-preset" data-preset="easy">Łatwy</button>
+          <button type="button" class="btn-preset" data-preset="carry">Z przeniesieniami</button>
+          <button type="button" class="btn-preset" data-preset="many">Wiele liczb</button>
+          <button type="button" class="btn-preset" data-preset="decimal">Ułamki dziesiętne</button>
+        </div>
+
+        <div id="inputs-list" class="inputs-list">
+          <!-- Dynamicznie generowane pola tekstowe -->
+        </div>
+
+        <div id="error-box" class="error-box" role="alert"></div>
+
+        <div class="input-actions">
+          <button type="button" id="btn-add-input" class="btn btn-secondary">+ Dodaj liczbę</button>
+          <button type="button" id="btn-calculate" class="btn btn-primary">Oblicz</button>
+        </div>
+
+        <div class="options-box">
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-headers" checked>
+            <span>Pokaż nazwy rzędów (T, S, D, J...)</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-padded-zeros" checked>
+            <span>Pokaż dopisane zera w ułamkach</span>
+          </label>
+        </div>
+
+        <p class="hint-text">
+          Wskazówka: dla ułamków dziesiętnych możesz używać przecinka (np. <strong>12,5</strong>) lub kropki (np. <strong>12.5</strong>).
+        </p>
+      </section>
+
+      <!-- PRAWY PANEL: KARTKA W KRATKĘ, WYJAŚNIENIE I STEROWANIE -->
+      <section class="card" aria-label="Wizualizacja dodawania pisemnego">
+        <div class="viz-header">
+          <h2 class="card-title" style="margin-bottom: 0;">2. Dodawanie w zeszycie</h2>
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span id="step-badge" class="step-badge">Start</span>
+            <label class="speed-control">
+              <span>Tempo:</span>
+              <select id="speed-select" class="speed-select" aria-label="Tempo animacji">
+                <option value="2400">Wolno</option>
+                <option value="1500" selected>Średnio</option>
+                <option value="850">Szybko</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <!-- KARTKA W KRATKĘ -->
+        <div class="notebook-shell">
+          <div id="math-grid" class="math-grid" aria-live="polite"></div>
+        </div>
+
+        <!-- PANEL DYDAKTYCZNY Z OPISEM KROKU -->
+        <div id="explanation-card" class="explanation-card">
+          <div id="explanation-title" class="explanation-title">Przygotowanie</div>
+          <div id="explanation-body" class="explanation-body"></div>
+        </div>
+
+        <!-- PRZYCISKI STERUJĄCE -->
+        <div class="controls-bar">
+          <button type="button" id="btn-reset" class="btn-ctrl" title="Wróć na początek (Krok 1)">⏮ Od nowa</button>
+          <button type="button" id="btn-prev" class="btn-ctrl" title="Poprzedni krok (Strzałka w lewo)">◀ Poprzedni</button>
+          <button type="button" id="btn-next" class="btn-ctrl btn-ctrl-primary" title="Następny krok (Strzałka w prawo)">Następny ▶</button>
+          <button type="button" id="btn-play" class="btn-ctrl btn-ctrl-play" title="Automatyczne odtwarzanie">▶ Odtwórz</button>
+          <button type="button" id="btn-show-all" class="btn-ctrl" title="Pokaż cały wynik od razu">⏭ Pokaż cały wynik</button>
+        </div>
+
+        <!-- LEGENDA KOLORÓW -->
+        <div class="legend-row">
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #fde047; border: 1px solid #eab308;"></span>
+            Aktualna kolumna
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #fee2e2; border: 1px solid #dc2626;"></span>
+            Przeniesienie („w pamięci”)
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #d1fae5; border: 1px solid #047857;"></span>
+            Wynik dodawania
+          </span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /**
+     * KALKULATOR DODAWANIA PISEMNEGO
+     * Logika aplikacji: walidacja, dokładne dodawanie na napisach (bez błędów zmiennoprzecinkowych),
+     * generowanie kroków dydaktycznych po polsku oraz renderowanie siatki zeszytowej.
+     */
+    (function () {
+      'use strict';
+
+      // =========================================================
+      // PRZYKŁADY TESTOWE
+      // =========================================================
+      const PRESETS = {
+        easy: ['243', '135'],
+        carry: ['478', '365'],
+        many: ['1258', '476', '89', '3405'],
+        decimal: ['12,45', '8,7', '0,365']
+      };
+
+      // =========================================================
+      // STAN APLIKACJI
+      // =========================================================
+      const state = {
+        inputs: ['478', '365'],
+        showHeaders: true,
+        showPaddedZeros: true,
+        model: null,       // Zbudowany model siatki i kroków
+        currentStep: 0,    // Indeks aktywnego kroku (0 = ustawienie liczb)
+        isPlaying: false,
+        playTimer: null,
+        speedMs: 1500
+      };
+
+      // =========================================================
+      // REFERENCJE DO ELEMENTÓW DOM
+      // =========================================================
+      const elInputsList = document.getElementById('inputs-list');
+      const elErrorBox = document.getElementById('error-box');
+      const elBtnAddInput = document.getElementById('btn-add-input');
+      const elBtnCalculate = document.getElementById('btn-calculate');
+      const elOptHeaders = document.getElementById('opt-headers');
+      const elOptPaddedZeros = document.getElementById('opt-padded-zeros');
+      const elMathGrid = document.getElementById('math-grid');
+      const elStepBadge = document.getElementById('step-badge');
+      const elExplanationCard = document.getElementById('explanation-card');
+      const elExplanationTitle = document.getElementById('explanation-title');
+      const elExplanationBody = document.getElementById('explanation-body');
+      const elBtnReset = document.getElementById('btn-reset');
+      const elBtnPrev = document.getElementById('btn-prev');
+      const elBtnNext = document.getElementById('btn-next');
+      const elBtnPlay = document.getElementById('btn-play');
+      const elBtnShowAll = document.getElementById('btn-show-all');
+      const elSpeedSelect = document.getElementById('speed-select');
+
+      // =========================================================
+      // POMOCNICZE FUNKCJE NAZEWNICTWA RZĘDÓW WIELKOŚCI
+      // =========================================================
+
+      /**
+       * Zwraca krótki skrót oraz pełną nazwę (w dopełniaczu) dla kolumny części całkowitej.
+       * @param {number} power - Potęga dziesiątki (0 = jedności, 1 = dziesiątki, itd.)
+       */
+      function getIntPlaceInfo(power) {
+        const map = [
+          { short: 'J', full: 'jedności' },
+          { short: 'D', full: 'dziesiątek' },
+          { short: 'S', full: 'setek' },
+          { short: 'T', full: 'tysięcy' },
+          { short: 'DT', full: 'dziesiątek tysięcy' },
+          { short: 'ST', full: 'setek tysięcy' },
+          { short: 'M', full: 'milionów' },
+          { short: 'DM', full: 'dziesiątek milionów' },
+          { short: 'SM', full: 'setek milionów' },
+          { short: 'Mld', full: 'miliardów' }
+        ];
+        if (power < map.length) {
+          return map[power];
+        }
+        return { short: '10^' + power, full: 'rzędu 10^' + power };
+      }
+
+      /**
+       * Zwraca krótki skrót oraz pełną nazwę (w dopełniaczu) dla kolumny części ułamkowej.
+       * @param {number} pos - Pozycja po przecinku (1 = części dziesiętne, 2 = setne, itd.)
+       */
+      function getFracPlaceInfo(pos) {
+        const map = {
+          1: { short: '0,1', full: 'części dziesiętnych' },
+          2: { short: '0,01', full: 'części setnych' },
+          3: { short: '0,001', full: 'części tysięcznych' },
+          4: { short: '10⁻⁴', full: 'części dziesięciotysięcznych' },
+          5: { short: '10⁻⁵', full: 'części stutysięcznych' },
+          6: { short: '10⁻⁶', full: 'części milionowych' }
+        };
+        if (map[pos]) {
+          return map[pos];
+        }
+        return { short: '10⁻' + pos, full: 'części ułamkowych (pozycja ' + pos + ')' };
+      }
+
+      // =========================================================
+      // WALIDACJA I PARSOWANIE DANYCH WEJŚCIOWYCH
+      // =========================================================
+
+      /**
+       * Waliduje listę tekstowych wpisów użytkownika i zwraca sparsowane liczby lub błąd.
+       */
+      function parseAndValidateInputs(rawValues) {
+        const parsed = [];
+        const invalidIndices = [];
+
+        if (rawValues.length < 2) {
+          return {
+            ok: false,
+            error: 'Podaj co najmniej dwie liczby do dodania.',
+            invalidIndices: []
+          };
+        }
+
+        for (let i = 0; i < rawValues.length; i++) {
+          // Usuwamy spacje (np. przy zapisie 1 250,50) i zamieniamy kropkę na przecinek
+          const cleaned = rawValues[i].trim().replace(/\s+/g, '').replace(/\./g, ',');
+
+          if (cleaned === '') {
+            invalidIndices.push(i);
+            return {
+              ok: false,
+              error: `Pole „Liczba ${i + 1}” jest puste. Wpisz liczbę lub usuń zbędne pole.`,
+              invalidIndices
+            };
+          }
+
+          if (cleaned.startsWith('-')) {
+            invalidIndices.push(i);
+            return {
+              ok: false,
+              error: `Pole „Liczba ${i + 1}” zawiera liczbę ujemną. Kalkulator obsługuje liczby nieujemne.`,
+              invalidIndices
+            };
+          }
+
+          if (!/^\d+(,\d+)?$/.test(cleaned)) {
+            invalidIndices.push(i);
+            return {
+              ok: false,
+              error: `Nieprawidłowy zapis w polu „Liczba ${i + 1}” (${rawValues[i]}). Używaj wyłącznie cyfr oraz opcjonalnie jednego przecinka lub kropki (np. 12,5).`,
+              invalidIndices
+            };
+          }
+
+          const parts = cleaned.split(',');
+          let intPart = parts[0].replace(/^0+(?=\d)/, ''); // Usuwamy zbędne zera wiodące
+          const fracPart = parts[1] || '';
+
+          if (intPart.length > 15 || fracPart.length > 10) {
+            invalidIndices.push(i);
+            return {
+              ok: false,
+              error: `Liczba w polu „Liczba ${i + 1}” jest zbyt długa (maksymalnie 15 cyfr przed przecinkiem i 10 po przecinku).`,
+              invalidIndices
+            };
+          }
+
+          parsed.push({
+            intPart,
+            fracPart,
+            display: fracPart ? `${intPart},${fracPart}` : intPart
+          });
+        }
+
+        return { ok: true, numbers: parsed };
+      }
+
+      // =========================================================
+      // SILNIK DODAWANIA PISEMNEGO I GENEROWANIA KROKÓW
+      // =========================================================
+
+      /**
+       * Buduje kompletny model wizualizacji: układ kolumn, wyrównane wiersze oraz listę kroków.
+       */
+      function buildAdditionModel(numbers) {
+        const maxIntLen = Math.max(...numbers.map(n => n.intPart.length));
+        const maxFracLen = Math.max(...numbers.map(n => n.fracPart.length));
+        const hasDecimal = maxFracLen > 0;
+
+        // 1. Wstępne obliczenie sumy cyfra po cyfrze, aby poznać liczbę dodatkowych kolumn po lewej
+        const totalInputDigits = maxIntLen + maxFracLen;
+        const paddedDigitStrings = numbers.map(n => {
+          const intPadded = n.intPart.padStart(maxIntLen, '0');
+          const fracPadded = n.fracPart.padEnd(maxFracLen, '0');
+          return intPadded + fracPadded;
+        });
+
+        let carry = 0;
+        for (let i = totalInputDigits - 1; i >= 0; i--) {
+          let colSum = carry;
+          for (let r = 0; r < paddedDigitStrings.length; r++) {
+            colSum += Number(paddedDigitStrings[r][i]);
+          }
+          carry = Math.floor(colSum / 10);
+        }
+
+        // Ile dodatkowych kolumn potrzeba po lewej stronie na ostatnie przeniesienie?
+        let extraIntCols = 0;
+        let tempCarry = carry;
+        while (tempCarry > 0) {
+          extraIntCols++;
+          tempCarry = Math.floor(tempCarry / 10);
+        }
+
+        const totalIntCols = maxIntLen + extraIntCols;
+
+        // 2. Zbudowanie metadanych kolumn wizualnych
+        // Kolumna 0 jest zarezerwowana na znak '+'
+        const columns = [];
+        columns.push({ type: 'sign', header: '', fullName: 'znak działania' });
+
+        for (let i = 0; i < totalIntCols; i++) {
+          const power = totalIntCols - 1 - i;
+          const info = getIntPlaceInfo(power);
+          columns.push({
+            type: 'int',
+            power,
+            header: info.short,
+            fullName: info.full
+          });
+        }
+
+        let commaColIndex = -1;
+        if (hasDecimal) {
+          commaColIndex = columns.length;
+          columns.push({
+            type: 'comma',
+            header: ',',
+            fullName: 'przecinka'
+          });
+
+          for (let f = 1; f <= maxFracLen; f++) {
+            const info = getFracPlaceInfo(f);
+            columns.push({
+              type: 'frac',
+              fracPos: f,
+              header: info.short,
+              fullName: info.full
+            });
+          }
+        }
+
+        const totalCols = columns.length;
+
+        // 3. Zbudowanie wierszy składników wyrównanych do siatki
+        const addendRows = numbers.map((num, rowIdx) => {
+          const cells = new Array(totalCols).fill(null).map(() => ({
+            char: '',
+            isPaddedZero: false,
+            isComma: false,
+            isSign: false,
+            digitValue: null
+          }));
+
+          // Znak '+' stawiamy w kolumnie 0 przy ostatnim składniku
+          if (rowIdx === numbers.length - 1) {
+            cells[0] = { char: '+', isPaddedZero: false, isComma: false, isSign: true, digitValue: null };
+          }
+
+          // Wypełnienie części całkowitej (od prawej strony części całkowitej w lewo)
+          const intEndCol = 1 + totalIntCols - 1;
+          for (let k = 0; k < num.intPart.length; k++) {
+            const ch = num.intPart[num.intPart.length - 1 - k];
+            const colIdx = intEndCol - k;
+            cells[colIdx] = {
+              char: ch,
+              isPaddedZero: false,
+              isComma: false,
+              isSign: false,
+              digitValue: Number(ch)
+            };
+          }
+
+          // Wypełnienie przecinka i części ułamkowej
+          if (hasDecimal) {
+            // Jeśli liczba była całkowita, a inne mają przecinek, możemy pokazać jej przecinek tylko gdy ma część ułamkową
+            // albo zawsze wyrównać przecinek pod przecinkiem (gdy liczba ma ułamek lub gdy dopisujemy zera).
+            const hasOwnFrac = num.fracPart.length > 0;
+            cells[commaColIndex] = {
+              char: ',',
+              isPaddedZero: !hasOwnFrac, // Przecinek dla liczby całkowitej w zadaniu z ułamkami traktujemy jako pomocniczy
+              isComma: true,
+              isSign: false,
+              digitValue: null
+            };
+
+            for (let f = 0; f < maxFracLen; f++) {
+              const colIdx = commaColIndex + 1 + f;
+              if (f < num.fracPart.length) {
+                const ch = num.fracPart[f];
+                cells[colIdx] = {
+                  char: ch,
+                  isPaddedZero: false,
+                  isComma: false,
+                  isSign: false,
+                  digitValue: Number(ch)
+                };
+              } else {
+                cells[colIdx] = {
+                  char: '0',
+                  isPaddedZero: true,
+                  isComma: false,
+                  isSign: false,
+                  digitValue: 0
+                };
+              }
+            }
+          }
+
+          return cells;
+        });
+
+        // 4. Wygenerowanie sekwencji kroków od prawej do lewej
+        const steps = [];
+        const resultChars = new Array(totalCols).fill('');
+        const revealedResultCols = new Set();
+        const revealedCarries = {}; // mapa: colIndex -> wartość przeniesienia
+
+        // Krok 0: Wprowadzenie / wyrównanie liczb
+        steps.push({
+          type: 'intro',
+          activeCol: null,
+          newCarryCol: null,
+          title: 'Ustawienie liczb jedna pod drugą',
+          explanationHtml: hasDecimal
+            ? 'Zapisujemy liczby jedna pod drugą tak, aby <strong>przecinki znalazły się dokładnie jeden pod drugim</strong>. Puste miejsca na końcu części ułamkowej można uzupełnić pomocniczymi zerami. Kliknij <strong>„Następny”</strong>, aby rozpocząć dodawanie od prawej strony.'
+            : 'Zapisujemy liczby jedna pod drugą, <strong>wyrównując je do prawej strony</strong> (jedności pod jednościami, dziesiątki pod dziesiątkami). Kliknij <strong>„Następny”</strong>, aby rozpocząć dodawanie od prawej strony.',
+          revealedResultCols: new Set(revealedResultCols),
+          revealedCarries: { ...revealedCarries },
+          resultSnapshot: [...resultChars]
+        });
+
+        // Przechodzimy kolumna po kolumnie od prawej do lewej (do kolumny 1 włącznie)
+        let runningCarry = 0;
+        let stepCounter = 0;
+
+        for (let col = totalCols - 1; col >= 1; col--) {
+          const colMeta = columns[col];
+
+          // Obsługa kolumny z przecinkiem
+          if (colMeta.type === 'comma') {
+            stepCounter++;
+            resultChars[col] = ',';
+            revealedResultCols.add(col);
+
+            steps.push({
+              type: 'comma',
+              stepNum: stepCounter,
+              activeCol: col,
+              newCarryCol: null,
+              title: `Krok ${stepCounter}: Kolumna przecinka`,
+              explanationHtml: 'Dotarliśmy do przecinka. Przepisujemy <span class="chip chip-res">,</span> dokładnie w tej samej kolumnie pod kreską (przecinek pod przecinkiem).',
+              revealedResultCols: new Set(revealedResultCols),
+              revealedCarries: { ...revealedCarries },
+              resultSnapshot: [...resultChars]
+            });
+            continue;
+          }
+
+          // Zbieramy cyfry w bieżącej kolumnie
+          const presentDigits = [];
+          let hasAnyRealDigit = false;
+          for (let r = 0; r < addendRows.length; r++) {
+            const cell = addendRows[r][col];
+            if (cell.digitValue !== null) {
+              presentDigits.push(cell.digitValue);
+              if (!cell.isPaddedZero) {
+                hasAnyRealDigit = true;
+              }
+            }
+          }
+
+          // Jeśli jesteśmy w dodatkowej kolumnie po lewej (tylko ostatnie przeniesienie)
+          if (!hasAnyRealDigit && presentDigits.length === 0) {
+            if (runningCarry > 0) {
+              stepCounter++;
+              const digitToWrite = runningCarry % 10;
+              const nextCarry = Math.floor(runningCarry / 10);
+              const incomingCarry = runningCarry;
+
+              resultChars[col] = String(digitToWrite);
+              revealedResultCols.add(col);
+
+              let nextCarryCol = null;
+              if (nextCarry > 0 && col - 1 >= 1) {
+                nextCarryCol = col - 1;
+                revealedCarries[nextCarryCol] = nextCarry;
+              }
+
+              let html = `Kolumna <strong>${colMeta.fullName}</strong>: w tej kolumnie nie ma już żadnych cyfr do dodania, dlatego przeniesienie <span class="chip chip-carry">${incomingCarry}</span> `;
+              if (nextCarry > 0) {
+                const targetMeta = columns[nextCarryCol];
+                html += `rozdzielamy — zapisujemy <span class="chip chip-res">${digitToWrite}</span> pod kreską, a <span class="chip chip-carry">${nextCarry}</span> przenosimy do kolumny <strong>${targetMeta.fullName}</strong>.`;
+              } else {
+                html += `spada bezpośrednio do wyniku pod kreską jako <span class="chip chip-res">${digitToWrite}</span>.`;
+              }
+
+              steps.push({
+                type: 'final-carry',
+                stepNum: stepCounter,
+                activeCol: col,
+                newCarryCol: nextCarryCol,
+                title: `Krok ${stepCounter}: Ostatnie przeniesienie (${colMeta.fullName})`,
+                explanationHtml: html,
+                revealedResultCols: new Set(revealedResultCols),
+                revealedCarries: { ...revealedCarries },
+                resultSnapshot: [...resultChars]
+              });
+
+              runningCarry = nextCarry;
+            }
+            continue;
+          }
+
+          // Standardowa kolumna z cyframi
+          stepCounter++;
+          const incomingCarry = runningCarry;
+          const sum = presentDigits.reduce((acc, val) => acc + val, 0) + incomingCarry;
+          const digitToWrite = sum % 10;
+          const outgoingCarry = Math.floor(sum / 10);
+
+          resultChars[col] = String(digitToWrite);
+          revealedResultCols.add(col);
+
+          // Wyznaczamy kolumnę docelową dla przeniesienia (omijamy kolumnę przecinka!)
+          let carryTargetCol = null;
+          let crossedComma = false;
+          if (outgoingCarry > 0) {
+            let target = col - 1;
+            if (target >= 1 && columns[target].type === 'comma') {
+              target -= 1;
+              crossedComma = true;
+            }
+            if (target >= 1) {
+              carryTargetCol = target;
+              revealedCarries[carryTargetCol] = outgoingCarry;
+            }
+          }
+
+          // Budowanie dydaktycznego zdania po polsku
+          const exprParts = presentDigits.map(d => `<span class="chip chip-num">${d}</span>`);
+          if (incomingCarry > 0) {
+            exprParts.push(`<span class="chip chip-carry">${incomingCarry}</span> (z przeniesienia)`);
+          }
+          const exprText = exprParts.join(' + ');
+
+          let explanationHtml = `Kolumna <strong>${colMeta.fullName}</strong>: ${exprText} = <span class="chip chip-num">${sum}</span>. `;
+          if (outgoingCarry > 0 && carryTargetCol !== null) {
+            const targetMeta = columns[carryTargetCol];
+            const commaNote = crossedComma ? ' nad przecinkiem' : '';
+            explanationHtml += `Zapisujemy <span class="chip chip-res">${digitToWrite}</span> pod kreską, a <span class="chip chip-carry">${outgoingCarry}</span> przenosimy${commaNote} do kolumny <strong>${targetMeta.fullName}</strong>.`;
+          } else {
+            explanationHtml += `Zapisujemy <span class="chip chip-res">${digitToWrite}</span> pod kreską.`;
+          }
+
+          steps.push({
+            type: 'digit',
+            stepNum: stepCounter,
+            activeCol: col,
+            newCarryCol: carryTargetCol,
+            title: `Krok ${stepCounter}: Kolumna ${colMeta.fullName}`,
+            explanationHtml,
+            revealedResultCols: new Set(revealedResultCols),
+            revealedCarries: { ...revealedCarries },
+            resultSnapshot: [...resultChars]
+          });
+
+          runningCarry = outgoingCarry;
+        }
+
+        // Krok końcowy (podsumowanie pełnego wyniku)
+        const finalResultStr = resultChars.filter(ch => ch !== '').join('');
+        const equationStr = numbers.map(n => n.display).join(' + ') + ' = ' + finalResultStr;
+
+        steps.push({
+          type: 'done',
+          stepNum: stepCounter,
+          activeCol: null,
+          newCarryCol: null,
+          title: 'Gotowe! Dodawanie zakończone',
+          explanationHtml: `Wszystkie kolumny zostały dodane. Pełny wynik działania: <br><span class="chip chip-res" style="margin-top: 6px; font-size: 1.08em;">${equationStr}</span>`,
+          revealedResultCols: new Set(revealedResultCols),
+          revealedCarries: { ...revealedCarries },
+          resultSnapshot: [...resultChars]
+        });
+
+        return {
+          columns,
+          totalCols,
+          addendRows,
+          steps,
+          totalCalcSteps: stepCounter,
+          finalResultStr
+        };
+      }
+
+      // =========================================================
+      // RENDEROWANIE INTERFEJSU
+      // =========================================================
+
+      /**
+       * Renderuje pola do wprowadzania liczb w lewym panelu.
+       */
+      function renderInputs() {
+        elInputsList.innerHTML = '';
+
+        state.inputs.forEach((val, idx) => {
+          const row = document.createElement('div');
+          row.className = 'input-row';
+
+          const badge = document.createElement('span');
+          badge.className = 'input-badge';
+          badge.textContent = String(idx + 1);
+          badge.title = `Liczba ${idx + 1}`;
+
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.inputMode = 'decimal';
+          input.className = 'number-input';
+          input.value = val;
+          input.placeholder = `Liczba ${idx + 1} (np. 125)`;
+          input.setAttribute('aria-label', `Liczba ${idx + 1}`);
+
+          input.addEventListener('input', (e) => {
+            state.inputs[idx] = e.target.value;
+            input.classList.remove('is-invalid');
+          });
+
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleCalculate();
+            }
+          });
+
+          const btnRemove = document.createElement('button');
+          btnRemove.type = 'button';
+          btnRemove.className = 'btn-remove';
+          btnRemove.innerHTML = '&times;';
+          btnRemove.title = 'Usuń tę liczbę';
+          btnRemove.setAttribute('aria-label', `Usuń liczbę ${idx + 1}`);
+          btnRemove.disabled = state.inputs.length <= 2;
+
+          btnRemove.addEventListener('click', () => {
+            if (state.inputs.length > 2) {
+              state.inputs.splice(idx, 1);
+              renderInputs();
+              handleCalculate();
+            }
+          });
+
+          row.appendChild(badge);
+          row.appendChild(input);
+          row.appendChild(btnRemove);
+          elInputsList.appendChild(row);
+        });
+      }
+
+      /**
+       * Wyświetla lub ukrywa komunikat o błędzie walidacji.
+       */
+      function showError(message, invalidIndices = []) {
+        const inputEls = elInputsList.querySelectorAll('.number-input');
+        inputEls.forEach((el, idx) => {
+          el.classList.toggle('is-invalid', invalidIndices.includes(idx));
+        });
+
+        if (message) {
+          elErrorBox.textContent = message;
+          elErrorBox.classList.add('visible');
+        } else {
+          elErrorBox.textContent = '';
+          elErrorBox.classList.remove('visible');
+        }
+      }
+
+      /**
+       * Renderuje kartkę w kratkę, opis bieżącego kroku oraz stan przycisków sterujących.
+       */
+      function renderVisualization() {
+        const model = state.model;
+        if (!model) return;
+
+        const step = model.steps[state.currentStep];
+        const { columns, totalCols, addendRows } = model;
+
+        // Ustawienie liczby kolumn CSS Grid
+        elMathGrid.style.gridTemplateColumns = `repeat(${totalCols}, var(--cell-size))`;
+        elMathGrid.innerHTML = '';
+
+        // 1. Opcjonalny wiersz nagłówków rzędów wielkości
+        if (state.showHeaders) {
+          for (let c = 0; c < totalCols; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell cell-header';
+            if (step.activeCol === c) cell.classList.add('col-active');
+            cell.textContent = columns[c].header;
+            if (columns[c].fullName && columns[c].type !== 'sign') {
+              cell.title = `Kolumna ${columns[c].fullName}`;
+            }
+            elMathGrid.appendChild(cell);
+          }
+        }
+
+        // 2. Wiersz przeniesień („w pamięci”)
+        for (let c = 0; c < totalCols; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'grid-cell cell-carry';
+          if (step.activeCol === c) cell.classList.add('col-active');
+          if (step.newCarryCol === c) cell.classList.add('is-new-carry');
+
+          const carryVal = step.revealedCarries[c];
+          if (carryVal !== undefined) {
+            const pill = document.createElement('span');
+            pill.className = 'carry-pill';
+            pill.textContent = String(carryVal);
+            pill.title = `Przeniesienie: ${carryVal}`;
+            cell.appendChild(pill);
+          }
+          elMathGrid.appendChild(cell);
+        }
+
+        // 3. Wiersze składników
+        addendRows.forEach((rowCells, rIdx) => {
+          const isLastAddend = rIdx === addendRows.length - 1;
+
+          for (let c = 0; c < totalCols; c++) {
+            const data = rowCells[c];
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            if (isLastAddend) cell.classList.add('row-last-addend');
+            if (step.activeCol === c) cell.classList.add('col-active');
+
+            if (data.isSign) {
+              cell.classList.add('cell-plus');
+              cell.textContent = data.char;
+            } else if (data.isComma) {
+              cell.classList.add('cell-comma');
+              if (data.isPaddedZero) {
+                if (state.showPaddedZeros) {
+                  cell.classList.add('cell-padded-zero');
+                  cell.textContent = data.char;
+                }
+              } else {
+                cell.textContent = data.char;
+              }
+            } else if (data.isPaddedZero) {
+              if (state.showPaddedZeros) {
+                cell.classList.add('cell-padded-zero');
+                const span = document.createElement('span');
+                span.textContent = data.char;
+                span.title = 'Dopisane zero pomocnicze';
+                cell.appendChild(span);
+              }
+            } else {
+              cell.textContent = data.char;
+            }
+
+            elMathGrid.appendChild(cell);
+          }
+        });
+
+        // 4. Wiersz wyniku pod kreską
+        for (let c = 0; c < totalCols; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'grid-cell cell-result';
+          if (step.activeCol === c) cell.classList.add('col-active');
+          if (columns[c].type === 'comma') cell.classList.add('cell-comma');
+
+          if (step.revealedResultCols.has(c)) {
+            const span = document.createElement('span');
+            span.textContent = step.resultSnapshot[c];
+            if (step.activeCol === c) {
+              span.className = 'result-digit-pop';
+            }
+            cell.appendChild(span);
+          }
+
+          elMathGrid.appendChild(cell);
+        }
+
+        // 5. Aktualizacja etykiety postępu i panelu wyjaśnień
+        if (step.type === 'intro') {
+          elStepBadge.textContent = `Start (0 / ${model.totalCalcSteps})`;
+        } else if (step.type === 'done') {
+          elStepBadge.textContent = `Wynik końcowy (${model.totalCalcSteps} / ${model.totalCalcSteps})`;
+        } else {
+          elStepBadge.textContent = `Krok ${step.stepNum} z ${model.totalCalcSteps}`;
+        }
+
+        elExplanationTitle.textContent = step.title;
+        elExplanationBody.innerHTML = step.explanationHtml;
+        elExplanationCard.classList.toggle('is-done', step.type === 'done');
+
+        // 6. Aktualizacja stanu przycisków sterowania
+        const lastIndex = model.steps.length - 1;
+        elBtnReset.disabled = state.currentStep === 0;
+        elBtnPrev.disabled = state.currentStep === 0;
+        elBtnNext.disabled = state.currentStep >= lastIndex;
+        elBtnShowAll.disabled = state.currentStep >= lastIndex;
+
+        updatePlayButtonUI();
+      }
+
+      // =========================================================
+      // STEROWANIE KROKAMI I ANIMACJĄ
+      // =========================================================
+
+      function stopAutoPlay() {
+        if (state.playTimer !== null) {
+          clearInterval(state.playTimer);
+          state.playTimer = null;
+        }
+        state.isPlaying = false;
+        updatePlayButtonUI();
+      }
+
+      function updatePlayButtonUI() {
+        if (state.isPlaying) {
+          elBtnPlay.textContent = '⏸ Pauza';
+          elBtnPlay.classList.add('is-playing');
+        } else {
+          elBtnPlay.textContent = '▶ Odtwórz';
+          elBtnPlay.classList.remove('is-playing');
+        }
+      }
+
+      function toggleAutoPlay() {
+        if (!state.model) return;
+
+        if (state.isPlaying) {
+          stopAutoPlay();
+          return;
+        }
+
+        // Jeśli jesteśmy na końcu, zacznij od początku
+        if (state.currentStep >= state.model.steps.length - 1) {
+          state.currentStep = 0;
+          renderVisualization();
+        }
+
+        state.isPlaying = true;
+        updatePlayButtonUI();
+
+        // Od razu przejdź o jeden krok, aby użytkownik natychmiast zobaczył reakcję
+        advanceOneStep();
+
+        if (state.isPlaying) {
+          state.playTimer = setInterval(() => {
+            advanceOneStep();
+          }, state.speedMs);
+        }
+      }
+
+      function advanceOneStep() {
+        if (!state.model) return;
+        const lastIndex = state.model.steps.length - 1;
+        if (state.currentStep < lastIndex) {
+          state.currentStep++;
+          renderVisualization();
+          if (state.currentStep >= lastIndex) {
+            stopAutoPlay();
+          }
+        } else {
+          stopAutoPlay();
+        }
+      }
+
+      function handleCalculate() {
+        stopAutoPlay();
+        const result = parseAndValidateInputs(state.inputs);
+        if (!result.ok) {
+          showError(result.error, result.invalidIndices);
+          return;
+        }
+
+        showError('');
+        state.model = buildAdditionModel(result.numbers);
+        state.currentStep = 0;
+        renderVisualization();
+      }
+
+      // =========================================================
+      // ZDARZENIA (EVENT LISTENERS)
+      // =========================================================
+
+      elBtnAddInput.addEventListener('click', () => {
+        if (state.inputs.length >= 12) {
+          showError('Możesz dodać maksymalnie 12 liczb jednocześnie.');
+          return;
+        }
+        state.inputs.push('');
+        renderInputs();
+        const allInputs = elInputsList.querySelectorAll('.number-input');
+        if (allInputs.length > 0) {
+          allInputs[allInputs.length - 1].focus();
+        }
+      });
+
+      elBtnCalculate.addEventListener('click', handleCalculate);
+
+      // Obsługa gotowych przykładów
+      document.querySelectorAll('.btn-preset').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-preset');
+          if (PRESETS[key]) {
+            state.inputs = [...PRESETS[key]];
+            renderInputs();
+            handleCalculate();
+          }
+        });
+      });
+
+      // Przełączniki opcji wyświetlania
+      elOptHeaders.addEventListener('change', () => {
+        state.showHeaders = elOptHeaders.checked;
+        renderVisualization();
+      });
+
+      elOptPaddedZeros.addEventListener('change', () => {
+        state.showPaddedZeros = elOptPaddedZeros.checked;
+        renderVisualization();
+      });
+
+      // Przyciski sterowania krokami
+      elBtnReset.addEventListener('click', () => {
+        stopAutoPlay();
+        state.currentStep = 0;
+        renderVisualization();
+      });
+
+      elBtnPrev.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.currentStep > 0) {
+          state.currentStep--;
+          renderVisualization();
+        }
+      });
+
+      elBtnNext.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.model && state.currentStep < state.model.steps.length - 1) {
+          state.currentStep++;
+          renderVisualization();
+        }
+      });
+
+      elBtnPlay.addEventListener('click', toggleAutoPlay);
+
+      elBtnShowAll.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.model) {
+          state.currentStep = state.model.steps.length - 1;
+          renderVisualization();
+        }
+      });
+
+      elSpeedSelect.addEventListener('change', () => {
+        state.speedMs = Number(elSpeedSelect.value);
+        if (state.isPlaying) {
+          stopAutoPlay();
+          toggleAutoPlay();
+        }
+      });
+
+      // Skróty klawiszowe (strzałki lewo/prawo do przełączania kroków, gdy kursor nie jest w polu tekstowym)
+      document.addEventListener('keydown', (e) => {
+        if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+          return;
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          elBtnNext.click();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          elBtnPrev.click();
+        }
+      });
+
+      // =========================================================
+      // INICJALIZACJA APLIKACJI
+      // =========================================================
+      window.addEventListener('load', () => {
+        renderInputs();
+        handleCalculate();
+      });
+    })();
+  </script>
+</body>
+</html>

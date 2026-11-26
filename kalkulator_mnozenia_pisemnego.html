@@ -1,0 +1,2290 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator mnożenia pisemnego</title>
+  <style>
+    /* =========================================================
+       ZMIENNE KOLORYSTYCZNE I TYPOGRAFIA (100% OFFLINE)
+       ========================================================= */
+    :root {
+      --bg-page: #f1f5f9;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-soft: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+
+      /* Kolory dydaktyczne dla etapów */
+      --factor-a-bg: #dbeafe;
+      --factor-a-border: #2563eb;
+      --factor-a-text: #1e3a8a;
+
+      --factor-b-bg: #ffedd5;
+      --factor-b-border: #ea580c;
+      --factor-b-text: #9a3412;
+
+      --mul-carry-color: #dc2626;
+      --mul-carry-bg: #fee2e2;
+      --mul-carry-border: #f87171;
+
+      --add-carry-color: #7c3aed;
+      --add-carry-bg: #f3e8ff;
+      --add-carry-border: #c084fc;
+
+      --add-col-bg: rgba(254, 240, 138, 0.65);
+
+      --dec-bg: #ccfbf1;
+      --dec-border: #0d9488;
+      --dec-text: #115e59;
+
+      --result-color: #047857;
+      --result-bg: rgba(236, 253, 245, 0.55);
+
+      /* Styl kartki w kratkę */
+      --paper-bg: #fffef9;
+      --paper-grid: #cfe2f3;
+      --paper-margin: #fca5a5;
+      --cell-size: 46px;
+
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 20px 16px 40px;
+    }
+
+    /* =========================================================
+       UKŁAD GŁÓWNY I NAGŁÓWEK
+       ========================================================= */
+    .app-wrapper {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .app-title-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .app-logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #2563eb, #ea580c);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      flex-shrink: 0;
+    }
+
+    .app-header h1 {
+      font-size: clamp(1.45rem, 3vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .app-subtitle {
+      color: var(--text-muted);
+      font-size: 0.96rem;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 375px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* =========================================================
+       KARTY (PANELE)
+       ========================================================= */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-md);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text-main);
+    }
+
+    /* =========================================================
+       LEWY PANEL: DANE WEJŚCIOWE I PRZYKŁADY
+       ========================================================= */
+    .presets-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .btn-preset {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-family: var(--font-sans);
+    }
+
+    .btn-preset .preset-math {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.8rem;
+      color: #1e40af;
+      font-weight: 700;
+    }
+
+    .btn-preset:hover {
+      background: #dbeafe;
+      transform: translateY(-1px);
+    }
+
+    .btn-preset:active {
+      transform: translateY(0);
+    }
+
+    .btn-preset.preset-wide {
+      grid-column: span 2;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .field-group {
+      margin-bottom: 10px;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 5px;
+    }
+
+    .field-sub {
+      font-size: 0.76rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .number-input {
+      width: 100%;
+      padding: 10px 13px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-main);
+      background: #f8fafc;
+      border: 2px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .number-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #ffffff;
+    }
+
+    .number-input.is-invalid {
+      border-color: var(--mul-carry-color);
+      background: #fef2f2;
+    }
+
+    .swap-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 4px 0 8px;
+    }
+
+    .swap-row::before,
+    .swap-row::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border-soft);
+    }
+
+    .btn-swap-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: var(--text-main);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-swap-inline:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+
+    .error-box {
+      display: none;
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.86rem;
+      margin: 10px 0 12px;
+    }
+
+    .error-box.visible {
+      display: block;
+    }
+
+    .btn-primary-full {
+      width: 100%;
+      margin-top: 6px;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      font-size: 0.96rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
+      transition: background-color 0.15s ease, transform 0.1s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-primary-full:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-primary-full:active {
+      transform: translateY(1px);
+    }
+
+    .options-box {
+      border-top: 1px solid var(--border-soft);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      line-height: 1.35;
+    }
+
+    .toggle-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .hint-text {
+      font-size: 0.79rem;
+      color: var(--text-muted);
+      margin-top: 12px;
+      line-height: 1.45;
+    }
+
+    /* =========================================================
+       PRAWY PANEL: NAGŁÓWEK ETAPU, PASEK POSTĘPU, KARTKA
+       ========================================================= */
+    .viz-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .badges-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stage-badge {
+      display: inline-flex;
+      align-items: center;
+      font-weight: 800;
+      font-size: 0.8rem;
+      padding: 5px 11px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border: 1px solid transparent;
+    }
+
+    .stage-setup {
+      background: #f1f5f9;
+      color: #334155;
+      border-color: #cbd5e1;
+    }
+
+    .stage-multiply {
+      background: #ffedd5;
+      color: #9a3412;
+      border-color: #fdba74;
+    }
+
+    .stage-add {
+      background: #f3e8ff;
+      color: #6b21a8;
+      border-color: #d8b4fe;
+    }
+
+    .stage-decimal {
+      background: #ccfbf1;
+      color: #115e59;
+      border-color: #5eead4;
+    }
+
+    .stage-done {
+      background: #d1fae5;
+      color: #065f46;
+      border-color: #6ee7b7;
+    }
+
+    .step-counter {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Pasek postępu */
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb, #0d9488);
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    /* Kartka w kratkę z czerwonym marginesem */
+    .notebook-shell {
+      position: relative;
+      background-color: var(--paper-bg);
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.04), var(--shadow-sm);
+      overflow-x: auto;
+      padding: 24px 24px 28px 46px;
+      margin-bottom: 18px;
+      min-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .notebook-shell::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 28px;
+      width: 2px;
+      background-color: var(--paper-margin);
+      opacity: 0.72;
+      pointer-events: none;
+    }
+
+    /* Siatka kratkowa: 1 cyfra = 1 kratka */
+    .math-grid {
+      display: grid;
+      border-top: 1px solid var(--paper-grid);
+      border-left: 1px solid var(--paper-grid);
+      background-color: var(--paper-bg);
+      width: max-content;
+      margin: 0 auto;
+    }
+
+    .grid-cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      border-right: 1px solid var(--paper-grid);
+      border-bottom: 1px solid var(--paper-grid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #1e293b;
+      position: relative;
+      transition: background-color 0.2s ease;
+      user-select: none;
+    }
+
+    /* Wiersz przeniesień mnożenia (nad 1. czynnikiem) */
+    .grid-cell.cell-mul-carry {
+      height: 36px;
+      font-size: 0.9rem;
+    }
+
+    .carry-pill-mul {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 24px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--mul-carry-bg);
+      border: 1.5px solid var(--mul-carry-border);
+      color: var(--mul-carry-color);
+      font-weight: 800;
+      font-size: 0.88rem;
+    }
+
+    .carry-pill-mul.is-fresh {
+      background: var(--mul-carry-color);
+      color: #ffffff;
+      border-color: #991b1b;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.22);
+      animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Wiersz przeniesień dodawania (nad iloczynami cząstkowymi) */
+    .grid-cell.cell-add-carry {
+      height: 34px;
+      font-size: 0.88rem;
+      background-color: rgba(243, 232, 255, 0.25);
+    }
+
+    .carry-pill-add {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      height: 22px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--add-carry-bg);
+      border: 1.5px solid var(--add-carry-border);
+      color: var(--add-carry-color);
+      font-weight: 800;
+      font-size: 0.86rem;
+    }
+
+    .carry-pill-add.is-fresh {
+      background: var(--add-carry-color);
+      color: #ffffff;
+      border-color: #5b21b6;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.22);
+      animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Przecinek dziesiętny — umieszczony na prawej krawędzi kratki (nie zajmuje osobnej kratki!) */
+    .comma-overlay {
+      position: absolute;
+      right: -5px;
+      bottom: -1px;
+      z-index: 4;
+      font-family: var(--font-mono);
+      font-size: 1.85rem;
+      font-weight: 900;
+      line-height: 1;
+      color: #0f172a;
+      pointer-events: none;
+    }
+
+    .comma-overlay.is-result-comma {
+      color: #047857;
+    }
+
+    .comma-overlay.is-fresh-comma {
+      color: #0d9488;
+      text-shadow: 0 0 8px rgba(13, 148, 136, 0.45);
+      animation: commaPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes commaPop {
+      0% { transform: scale(2.2) translateY(-6px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    /* Podświetlenia aktywnych cyfr w czynnikach */
+    .grid-cell.is-active-a {
+      background-color: var(--factor-a-bg) !important;
+      color: var(--factor-a-text);
+      box-shadow: inset 0 0 0 2.5px var(--factor-a-border);
+    }
+
+    .grid-cell.is-active-b {
+      background-color: var(--factor-b-bg) !important;
+      color: var(--factor-b-text);
+      box-shadow: inset 0 0 0 2.5px var(--factor-b-border);
+    }
+
+    /* Podświetlenie cyfr po przecinku (Etap 3) */
+    .grid-cell.is-dec-highlight {
+      background-color: var(--dec-bg) !important;
+      color: var(--dec-text);
+      box-shadow: inset 0 0 0 1.5px var(--dec-border);
+    }
+
+    /* Podświetlenie aktywnej kolumny w etapie dodawania */
+    .grid-cell.is-add-col {
+      background-color: var(--add-col-bg) !important;
+    }
+
+    /* Znaki działań × oraz + */
+    .grid-cell.cell-op {
+      color: var(--primary);
+      font-size: 1.7rem;
+      font-weight: 800;
+    }
+
+    .grid-cell.cell-op-plus {
+      color: var(--add-carry-color);
+    }
+
+    /* Poziome kreski oddzielające */
+    .grid-cell.row-line {
+      border-bottom: 3.5px solid #0f172a;
+    }
+
+    /* Zera pomocnicze w przesunięciach iloczynów cząstkowych */
+    .grid-cell.cell-shift-zero {
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .grid-cell.cell-shift-zero span {
+      border-bottom: 1.5px dashed #cbd5e1;
+      line-height: 1.05;
+    }
+
+    /* Wiersz iloczynu cząstkowego (gdy jest tylko 1, staje się wynikiem) */
+    .grid-cell.cell-partial {
+      color: #1e293b;
+    }
+
+    .grid-cell.cell-result {
+      color: var(--result-color);
+      font-size: 1.62rem;
+      font-weight: 800;
+      background-color: var(--result-bg);
+    }
+
+    .grid-cell.cell-result.is-add-col {
+      background-color: #bbf7d0 !important;
+      color: #065f46;
+    }
+
+    .digit-pop {
+      display: inline-block;
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .digit-leading-zero {
+      color: #0d9488;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.45); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* =========================================================
+       PANEL WYJAŚNIENIA DYDAKTYCZNEGO I BANER PODSUMOWANIA
+       ========================================================= */
+    .explanation-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid var(--primary);
+      border-radius: var(--radius-md);
+      padding: 15px 18px;
+      margin-bottom: 18px;
+      min-height: 102px;
+      transition: border-left-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .explanation-card.theme-multiply {
+      border-left-color: #ea580c;
+      background: #fff7ed;
+      border-color: #fed7aa;
+    }
+
+    .explanation-card.theme-add {
+      border-left-color: #7c3aed;
+      background: #faf5ff;
+      border-color: #e9d5ff;
+    }
+
+    .explanation-card.theme-decimal {
+      border-left-color: #0d9488;
+      background: #f0fdfa;
+      border-color: #99f6e4;
+    }
+
+    .explanation-card.theme-done {
+      border-left-color: var(--result-color);
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+    }
+
+    .explanation-title {
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .explanation-card.theme-multiply .explanation-title { color: #c2410c; }
+    .explanation-card.theme-add .explanation-title { color: #6d28d9; }
+    .explanation-card.theme-decimal .explanation-title { color: #0f766e; }
+    .explanation-card.theme-done .explanation-title { color: var(--result-color); }
+
+    .explanation-body {
+      font-size: 1rem;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    .chip {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-size: 0.96em;
+    }
+
+    .chip-a { background: var(--factor-a-bg); color: var(--factor-a-text); }
+    .chip-b { background: var(--factor-b-bg); color: var(--factor-b-text); }
+    .chip-num { background: #e2e8f0; color: #0f172a; }
+    .chip-mul-carry { background: var(--mul-carry-bg); color: var(--mul-carry-color); }
+    .chip-add-carry { background: var(--add-carry-bg); color: var(--add-carry-color); }
+    .chip-dec { background: var(--dec-bg); color: var(--dec-text); }
+    .chip-res { background: #d1fae5; color: #065f46; }
+
+    .summary-banner {
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: #ffffff;
+      border: 2px solid #6ee7b7;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #065f46;
+      display: inline-block;
+    }
+
+    /* =========================================================
+       STEROWANIE ODTWARZANIEM I SUWAK TEMPA
+       ========================================================= */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .btn-ctrl {
+      padding: 10px 13px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-ctrl:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }
+
+    .btn-ctrl:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ctrl-primary {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .btn-ctrl-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .btn-ctrl-play {
+      background: #0f766e;
+      color: #ffffff;
+      border-color: #0f766e;
+      min-width: 126px;
+    }
+
+    .btn-ctrl-play:hover:not(:disabled) {
+      background: #115e59;
+      border-color: #115e59;
+    }
+
+    .btn-ctrl-play.is-playing {
+      background: #d97706;
+      border-color: #d97706;
+    }
+
+    .btn-ctrl-play.is-playing:hover:not(:disabled) {
+      background: #b45309;
+      border-color: #b45309;
+    }
+
+    /* Suwak tempa */
+    .speed-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+    }
+
+    .speed-slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .speed-slider {
+      width: 130px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .speed-label-pill {
+      min-width: 68px;
+      text-align: center;
+      background: #e2e8f0;
+      color: var(--text-main);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .shortcuts-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    /* Legenda kolorów */
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      justify-content: center;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-soft);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    /* =========================================================
+       RESPONSYWNOŚĆ (TELEFONY I TABLETY)
+       ========================================================= */
+    @media (max-width: 600px) {
+      :root {
+        --cell-size: 38px;
+      }
+
+      body {
+        padding: 14px 10px 30px;
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .notebook-shell {
+        padding: 18px 14px 22px 34px;
+      }
+
+      .notebook-shell::before {
+        left: 20px;
+      }
+
+      .grid-cell {
+        font-size: 1.28rem;
+      }
+
+      .grid-cell.cell-result {
+        font-size: 1.34rem;
+      }
+
+      .comma-overlay {
+        font-size: 1.55rem;
+        right: -4px;
+      }
+
+      .presets-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .btn-preset.preset-wide {
+        grid-column: span 1;
+      }
+
+      .controls-bar {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      #btn-show-all {
+        grid-column: span 2;
+      }
+
+      .shortcuts-hint {
+        display: none;
+      }
+    }
+  
+    /* =========================================================
+       PRZYCISK POWROTU DO MENU GŁÓWNEGO
+       ========================================================= */
+    .top-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .btn-back-menu {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 15px;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #1e293b;
+      border: 1.5px solid #cbd5e1;
+      text-decoration: none;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-back-menu:hover,
+    .btn-back-menu:focus-visible {
+      background: #eff6ff;
+      border-color: #2563eb;
+      color: #2563eb;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <nav class="top-nav-bar" aria-label="Nawigacja główna">
+      <a href="index.html" class="btn-back-menu" title="Wróć do menu głównego">← Menu</a>
+    </nav>
+
+    <!-- NAGŁÓWEK -->
+    <header class="app-header">
+      <div class="app-title-row">
+        <div class="app-logo" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </div>
+        <h1>Kalkulator mnożenia pisemnego</h1>
+      </div>
+      <p class="app-subtitle">Wpisz dwa czynniki i prześledź krok po kroku mnożenie pisemne, dodawanie iloczynów cząstkowych oraz stawianie przecinka na kartce w kratkę.</p>
+    </header>
+
+    <main class="main-grid">
+      <!-- LEWY PANEL: WPROWADZANIE LICZB I OPCJE -->
+      <section class="card" aria-label="Wprowadzanie danych">
+        <h2 class="card-title">1. Wpisz czynniki do pomnożenia</h2>
+
+        <div class="presets-label">Gotowe przykłady edukacyjne:</div>
+        <div class="presets-grid">
+          <button type="button" class="btn-preset" data-preset="oneDigit">
+            <span>Jedna cyfra</span>
+            <span class="preset-math">247 × 6</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="carries">
+            <span>Z przeniesieniami</span>
+            <span class="preset-math">348 × 27</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="midZero">
+            <span>Zero w środku</span>
+            <span class="preset-math">405 × 206</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="decimals">
+            <span>Ułamki dziesiętne</span>
+            <span class="preset-math">12,4 × 3,25</span>
+          </button>
+          <button type="button" class="btn-preset preset-wide" data-preset="smallDecimals">
+            <span>Małe ułamki z zerami wiodącymi</span>
+            <span class="preset-math">0,15 × 0,4</span>
+          </button>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="input-factor-a">
+            <span>Pierwszy czynnik (górny)</span>
+            <span class="field-sub">maks. 6 cyfr</span>
+          </label>
+          <input type="text" id="input-factor-a" class="number-input" inputmode="decimal" value="348" placeholder="np. 348 lub 12,4" autocomplete="off">
+        </div>
+
+        <div class="swap-row">
+          <button type="button" id="btn-swap" class="btn-swap-inline" title="Zamień miejscami pierwszy i drugi czynnik">⇄ Zamień</button>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="input-factor-b">
+            <span>Drugi czynnik (dolny)</span>
+            <span class="field-sub">maks. 6 cyfr</span>
+          </label>
+          <input type="text" id="input-factor-b" class="number-input" inputmode="decimal" value="27" placeholder="np. 27 lub 3,25" autocomplete="off">
+        </div>
+
+        <div id="error-box" class="error-box" role="alert"></div>
+
+        <button type="button" id="btn-calculate" class="btn-primary-full">Wizualizuj mnożenie</button>
+
+        <div class="options-box">
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-shift-zeros" checked>
+            <span>Pokaż zera pomocnicze w przesunięciach</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-skip-zero-rows">
+            <span>Pomiń wiersze zerowe przy mnożeniu przez 0</span>
+          </label>
+        </div>
+
+        <p class="hint-text">
+          Wskazówka: dla ułamków dziesiętnych możesz używać przecinka (<strong>12,4</strong>) lub kropki (<strong>12.4</strong>) — na kartce zawsze zobaczysz polski przecinek.
+        </p>
+      </section>
+
+      <!-- PRAWY PANEL: KARTKA W KRATKĘ, WYJAŚNIENIE I STEROWANIE -->
+      <section class="card" aria-label="Wizualizacja mnożenia pisemnego">
+        <div class="viz-header">
+          <h2 class="card-title" style="margin-bottom: 0;">2. Mnożenie w zeszycie</h2>
+          <div class="badges-group">
+            <span id="stage-badge" class="stage-badge stage-setup">Ustawienie</span>
+            <span id="step-counter" class="step-counter">Krok 0 z 0</span>
+          </div>
+        </div>
+
+        <!-- PASEK POSTĘPU -->
+        <div class="progress-track" aria-hidden="true">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+
+        <!-- KARTKA W KRATKĘ -->
+        <div class="notebook-shell">
+          <div id="math-grid" class="math-grid" aria-live="polite"></div>
+        </div>
+
+        <!-- PANEL OPISU KROKU -->
+        <div id="explanation-card" class="explanation-card">
+          <div id="explanation-title" class="explanation-title">Przygotowanie</div>
+          <div id="explanation-body" class="explanation-body"></div>
+        </div>
+
+        <!-- PRZYCISKI STEROWANIA -->
+        <div class="controls-bar">
+          <button type="button" id="btn-reset" class="btn-ctrl" title="Wróć na początek">⏮ Początek</button>
+          <button type="button" id="btn-prev" class="btn-ctrl" title="Poprzedni krok (Strzałka w lewo)">◀ Poprzedni</button>
+          <button type="button" id="btn-play" class="btn-ctrl btn-ctrl-play" title="Automatyczne odtwarzanie (Spacja)">▶ Odtwarzaj</button>
+          <button type="button" id="btn-next" class="btn-ctrl btn-ctrl-primary" title="Następny krok (Strzałka w prawo)">Następny ▶</button>
+          <button type="button" id="btn-show-all" class="btn-ctrl" title="Przejdź od razu do wyniku końcowego">⏭ Wynik końcowy</button>
+        </div>
+
+        <!-- SUWAK TEMPA I SKRÓTY -->
+        <div class="speed-row">
+          <label class="speed-slider-wrap" for="speed-slider">
+            <span>Tempo animacji:</span>
+            <input type="range" id="speed-slider" class="speed-slider" min="1" max="3" step="1" value="2">
+            <span id="speed-label" class="speed-label-pill">Średnio</span>
+          </label>
+          <div class="shortcuts-hint">
+            Skróty: <span class="kbd">←</span> <span class="kbd">→</span> krok, <span class="kbd">Spacja</span> odtwarzaj/pauza
+          </div>
+        </div>
+
+        <!-- LEGENDA -->
+        <div class="legend-row">
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #dbeafe; border: 1.5px solid #2563eb;"></span>
+            Cyfra 1. czynnika
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #ffedd5; border: 1.5px solid #ea580c;"></span>
+            Cyfra 2. czynnika
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #fee2e2; border: 1.5px solid #dc2626;"></span>
+            Przeniesienie (mnożenie)
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #f3e8ff; border: 1.5px solid #7c3aed;"></span>
+            Przeniesienie (dodawanie)
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #ccfbf1; border: 1.5px solid #0d9488;"></span>
+            Miejsca po przecinku
+          </span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /**
+     * KALKULATOR MNOŻENIA PISEMNEGO
+     * Bezbłędna matematycznie symulacja na cyfrach (zero błędów zmiennoprzecinkowych),
+     * z obsługą ułamków dziesiętnych, zer w środku oraz małych ułamków z zerami wiodącymi.
+     */
+    (function () {
+      'use strict';
+
+      // =========================================================
+      // GOTOWE PRZYKŁADY I KONFIGURACJA TEMPA
+      // =========================================================
+      const PRESETS = {
+        oneDigit: { a: '247', b: '6' },
+        carries: { a: '348', b: '27' },
+        midZero: { a: '405', b: '206' },
+        decimals: { a: '12,4', b: '3,25' },
+        smallDecimals: { a: '0,15', b: '0,4' }
+      };
+
+      const SPEED_MAP = {
+        1: { label: 'Wolno', ms: 2400 },
+        2: { label: 'Średnio', ms: 1450 },
+        3: { label: 'Szybko', ms: 750 }
+      };
+
+      // =========================================================
+      // STAN APLIKACJI
+      // =========================================================
+      const state = {
+        showShiftZeros: true,
+        skipZeroRows: false,
+        model: null,
+        currentStep: 0,
+        isPlaying: false,
+        playTimer: null,
+        speedLevel: 2
+      };
+
+      // =========================================================
+      // ELEMENTY DOM
+      // =========================================================
+      const elFactorA = document.getElementById('input-factor-a');
+      const elFactorB = document.getElementById('input-factor-b');
+      const elBtnSwap = document.getElementById('btn-swap');
+      const elBtnCalculate = document.getElementById('btn-calculate');
+      const elErrorBox = document.getElementById('error-box');
+      const elOptShiftZeros = document.getElementById('opt-shift-zeros');
+      const elOptSkipZeroRows = document.getElementById('opt-skip-zero-rows');
+      const elStageBadge = document.getElementById('stage-badge');
+      const elStepCounter = document.getElementById('step-counter');
+      const elProgressFill = document.getElementById('progress-fill');
+      const elMathGrid = document.getElementById('math-grid');
+      const elExplanationCard = document.getElementById('explanation-card');
+      const elExplanationTitle = document.getElementById('explanation-title');
+      const elExplanationBody = document.getElementById('explanation-body');
+      const elBtnReset = document.getElementById('btn-reset');
+      const elBtnPrev = document.getElementById('btn-prev');
+      const elBtnPlay = document.getElementById('btn-play');
+      const elBtnNext = document.getElementById('btn-next');
+      const elBtnShowAll = document.getElementById('btn-show-all');
+      const elSpeedSlider = document.getElementById('speed-slider');
+      const elSpeedLabel = document.getElementById('speed-label');
+
+      // =========================================================
+      // WALIDACJA I PARSOWANIE CZYNNIKÓW
+      // =========================================================
+
+      /**
+       * Waliduje i parsuje pojedynczy czynnik (nieujemny, maks. 6 cyfr).
+       */
+      function parseFactor(rawText, fieldName) {
+        const cleaned = rawText.trim().replace(/\s+/g, '').replace(/\./g, ',');
+
+        if (cleaned === '') {
+          return { ok: false, error: `Pole „${fieldName}” nie może być puste. Wpisz liczbę.` };
+        }
+
+        if (cleaned.startsWith('-') || cleaned.startsWith('−')) {
+          return { ok: false, error: `Pole „${fieldName}” zawiera liczbę ujemną. Wpisz liczbę nieujemną.` };
+        }
+
+        if (!/^\d+(,\d+)?$/.test(cleaned)) {
+          return {
+            ok: false,
+            error: `Nieprawidłowy zapis w polu „${fieldName}” (${rawText}). Używaj wyłącznie cyfr oraz opcjonalnie jednego przecinka lub kropki.`
+          };
+        }
+
+        const parts = cleaned.split(',');
+        const intPart = parts[0].replace(/^0+(?=\d)/, ''); // np. 0012 -> 12, 00 -> 0
+        const fracPart = parts[1] || '';
+        const digitsStr = intPart + fracPart;
+
+        if (digitsStr.length > 6) {
+          return {
+            ok: false,
+            error: `Liczba w polu „${fieldName}” ma za dużo cyfr (${digitsStr.length}). Wpisz liczbę o maksymalnie 6 cyfrach, aby zapis w kratkach był czytelny.`
+          };
+        }
+
+        // Cyfry znaczące do mnożenia (np. dla "0,15" -> "15", dla "0,00" -> "0")
+        const calcDigits = digitsStr.replace(/^0+/, '') || '0';
+        const isZero = calcDigits === '0';
+
+        return {
+          ok: true,
+          value: {
+            intPart,
+            fracPart,
+            decPlaces: fracPart.length,
+            digitsStr,
+            calcDigits,
+            isZero,
+            display: fracPart.length > 0 ? `${intPart},${fracPart}` : intPart
+          }
+        };
+      }
+
+      /**
+       * Zwraca poprawną polską odmianę wyrazu "cyfra" / "miejsce" dla liczby miejsc po przecinku.
+       */
+      function pluralCyfry(n) {
+        if (n === 1) return '1 cyfrę';
+        if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return `${n} cyfry`;
+        return `${n} cyfr`;
+      }
+
+      /**
+       * Zwraca uproszczoną postać ułamka dziesiętnego (usuwa niepotrzebne zera na końcu po przecinku).
+       */
+      function simplifyDecimalString(str) {
+        if (!str.includes(',')) return str;
+        const [iPart, fPart] = str.split(',');
+        const trimmedFrac = fPart.replace(/0+$/, '');
+        if (trimmedFrac === '') {
+          return iPart;
+        }
+        return `${iPart},${trimmedFrac}`;
+      }
+
+      /**
+       * Głębokie klonowanie tablicy iloczynów cząstkowych na potrzeby migawek kroków.
+       */
+      function clonePartials(partials) {
+        return partials.map(p => ({
+          shift: p.shift,
+          visible: p.visible,
+          isZeroRow: p.isZeroRow,
+          freshCol: p.freshCol,
+          digits: { ...p.digits }
+        }));
+      }
+
+      // =========================================================
+      // SILNIK MNOŻENIA PISEMNEGO I GENEROWANIA KROKÓW
+      // =========================================================
+
+      function buildMultiplicationModel(factorA, factorB, skipZeroRows) {
+        const totalDecPlaces = factorA.decPlaces + factorB.decPlaces;
+        const anyZero = factorA.isZero || factorB.isZero;
+
+        // Dokładny iloczyn liczb całkowitych (bez przecinków) za pomocą BigInt
+        const rawProdBig = BigInt(factorA.calcDigits) * BigInt(factorB.calcDigits);
+        const rawProdStr = rawProdBig.toString();
+
+        // Liczba cyfr wyniku z uwzględnieniem ewentualnych zer wiodących po wstawieniu przecinka
+        const finalResultDigitLen = totalDecPlaces > 0
+          ? Math.max(rawProdStr.length, totalDecPlaces + 1)
+          : rawProdStr.length;
+
+        // Wyznaczamy, które cyfry dolnego czynnika będą tworzyły wiersze cząstkowe
+        // Przechodzimy po calcDigits czynnika B od prawej do lewej (shift = 0, 1, 2, ...)
+        const bCalcLen = factorB.calcDigits.length;
+        const aCalcLen = factorA.calcDigits.length;
+
+        // Sprawdzamy, ile fizycznych wierszy iloczynów cząstkowych powstanie
+        const plannedRows = [];
+        if (anyZero) {
+          plannedRows.push({
+            bIndexFromRight: 0,
+            bDigit: factorB.isZero ? 0 : Number(factorB.calcDigits[bCalcLen - 1]),
+            shift: 0,
+            isWholeZero: true
+          });
+        } else {
+          for (let shift = 0; shift < bCalcLen; shift++) {
+            const dB = Number(factorB.calcDigits[bCalcLen - 1 - shift]);
+            const isZeroDigit = dB === 0;
+            if (isZeroDigit && skipZeroRows) {
+              continue; // Ten wiersz jest pomijany (ale wygenerujemy krok z wyjaśnieniem)
+            }
+            plannedRows.push({
+              bIndexFromRight: shift,
+              bDigit: dB,
+              shift,
+              isZeroDigit,
+              isWholeZero: false
+            });
+          }
+        }
+
+        // Czy potrzebujemy etapu dodawania (gdy mamy co najmniej 2 wiersze cząstkowe)?
+        const needsAddition = plannedRows.length >= 2;
+
+        // Obliczamy maksymalną potrzebną szerokość w kratkach (bez kolumny 0 na znaki × i +)
+        let maxPartialWidth = 1;
+        plannedRows.forEach((row) => {
+          if (row.isWholeZero) {
+            maxPartialWidth = Math.max(maxPartialWidth, 1);
+          } else if (row.isZeroDigit) {
+            maxPartialWidth = Math.max(maxPartialWidth, row.shift + aCalcLen);
+          } else {
+            const pStr = (BigInt(factorA.calcDigits) * BigInt(row.bDigit)).toString();
+            maxPartialWidth = Math.max(maxPartialWidth, row.shift + pStr.length);
+          }
+        });
+
+        const numDigitCols = Math.max(
+          factorA.digitsStr.length,
+          factorB.digitsStr.length,
+          finalResultDigitLen,
+          maxPartialWidth
+        );
+
+        // Kolumna 0 zarezerwowana na znaki działań (×, +), cyfry w kolumnach 1..numDigitCols
+        const totalCols = 1 + numDigitCols;
+        const rightCol = totalCols - 1;
+
+        // Rozmieszczenie czynników A i B w siatce (wyrównanie do prawej)
+        const factorACells = {}; // col -> char
+        for (let i = 0; i < factorA.digitsStr.length; i++) {
+          const col = rightCol - (factorA.digitsStr.length - 1 - i);
+          factorACells[col] = factorA.digitsStr[i];
+        }
+        const factorACommaCol = factorA.decPlaces > 0 ? rightCol - factorA.decPlaces : null;
+
+        const factorBCells = {}; // col -> char
+        for (let i = 0; i < factorB.digitsStr.length; i++) {
+          const col = rightCol - (factorB.digitsStr.length - 1 - i);
+          factorBCells[col] = factorB.digitsStr[i];
+        }
+        const factorBCommaCol = factorB.decPlaces > 0 ? rightCol - factorB.decPlaces : null;
+
+        const resultCommaCol = totalDecPlaces > 0 ? rightCol - totalDecPlaces : null;
+
+        // Inicjalizacja pustych wierszy cząstkowych
+        const partialsState = plannedRows.map(r => ({
+          shift: r.shift,
+          visible: false,
+          isZeroRow: Boolean(r.isZeroDigit || r.isWholeZero),
+          freshCol: null,
+          digits: {}
+        }));
+
+        // Pomocnicza tablica kroków
+        const steps = [];
+        let mulCarries = {};
+        let addCarries = {};
+        let resultDigits = {};
+        let showAddSection = false;
+        let showResultComma = false;
+
+        function pushStep(cfg) {
+          steps.push({
+            stage: cfg.stage,
+            stageLabel: cfg.stageLabel,
+            title: cfg.title,
+            explanationHtml: cfg.explanationHtml,
+            activeA: cfg.activeA !== undefined ? cfg.activeA : null,
+            activeB: cfg.activeB !== undefined ? cfg.activeB : null,
+            highlightDecimals: Boolean(cfg.highlightDecimals),
+            mulCarries: { ...mulCarries },
+            freshMulCarryCol: cfg.freshMulCarryCol !== undefined ? cfg.freshMulCarryCol : null,
+            partials: clonePartials(partialsState),
+            showAddSection,
+            addCarries: { ...addCarries },
+            freshAddCarryCol: cfg.freshAddCarryCol !== undefined ? cfg.freshAddCarryCol : null,
+            activeAddCol: cfg.activeAddCol !== undefined ? cfg.activeAddCol : null,
+            resultDigits: { ...resultDigits },
+            freshResultCols: new Set(cfg.freshResultCols || []),
+            showResultComma,
+            freshResultComma: Boolean(cfg.freshResultComma)
+          });
+        }
+
+        // =======================================================
+        // KROK 0: USTAWIENIE CZYNNIKÓW
+        // =======================================================
+        let setupHtml = `Zapisujemy oba czynniki jeden pod drugim, <strong>wyrównując cyfry do prawej strony</strong> (<span class="chip chip-a">${factorA.display}</span> oraz <span class="chip chip-b">${factorB.display}</span>). `;
+        if (totalDecPlaces > 0) {
+          setupHtml += 'Podczas samego mnożenia <strong>chwilowo pomijamy przecinki</strong> — wrócimy do nich na samym końcu, aby wstawić przecinek w wyniku.';
+        } else {
+          setupHtml += 'Zaczynamy mnożenie od ostatniej cyfry z prawej strony dolnego czynnika.';
+        }
+
+        pushStep({
+          stage: 'setup',
+          stageLabel: 'Ustawienie',
+          title: 'Krok 0: Ustawienie liczb jedna pod drugą',
+          explanationHtml: setupHtml
+        });
+
+        // =======================================================
+        // ETAP 1: MNOŻENIE
+        // =======================================================
+        if (anyZero) {
+          // Przypadek szczególny: co najmniej jeden czynnik jest równy 0
+          partialsState[0].visible = true;
+          partialsState[0].digits[rightCol] = '0';
+          partialsState[0].freshCol = rightCol;
+          resultDigits[rightCol] = '0';
+
+          pushStep({
+            stage: 'multiply',
+            stageLabel: 'Etap: Mnożenie',
+            title: 'Mnożenie przez zero',
+            explanationHtml: `Każda liczba pomnożona przez <span class="chip chip-num">0</span> daje w wyniku <span class="chip chip-res">0</span>. Wpisujemy <span class="chip chip-res">0</span> pod kreską.`,
+            activeA: rightCol,
+            activeB: rightCol,
+            freshResultCols: [rightCol]
+          });
+          partialsState[0].freshCol = null;
+        } else {
+          // Standardowe mnożenie po kolejnych cyfrach znaczących czynnika B od prawej do lewej
+          let plannedRowIdx = 0;
+
+          for (let shift = 0; shift < bCalcLen; shift++) {
+            const bCol = rightCol - shift;
+            const dB = Number(factorB.calcDigits[bCalcLen - 1 - shift]);
+
+            // Przed każdą nową cyfrą mnożnika czyścimy przeniesienia z górnego wiersza
+            mulCarries = {};
+
+            // Obsługa cyfry 0 w środku drugiego czynnika (np. 405 × 206)
+            if (dB === 0) {
+              if (skipZeroRows) {
+                pushStep({
+                  stage: 'multiply',
+                  stageLabel: 'Etap: Mnożenie',
+                  title: 'Mnożenie przez 0 (pominięcie wiersza)',
+                  activeB: bCol,
+                  explanationHtml: `Kolejna cyfra dolnego czynnika to <span class="chip chip-b">0</span>. Mnożenie przez <span class="chip chip-b">0</span> daje same zera, więc <strong>pomijamy ten wiersz</strong> — następny iloczyn cząstkowy przesuniemy o dodatkową kratkę w lewo.`
+                });
+                continue;
+              } else {
+                const pRow = partialsState[plannedRowIdx];
+                pRow.visible = true;
+                for (let k = 0; k < aCalcLen; k++) {
+                  const targetCol = rightCol - shift - k;
+                  pRow.digits[targetCol] = '0';
+                }
+                pRow.freshCol = rightCol - shift;
+
+                const zerosStr = '0'.repeat(aCalcLen);
+                pushStep({
+                  stage: 'multiply',
+                  stageLabel: 'Etap: Mnożenie',
+                  title: 'Mnożenie przez 0 (wiersz zerowy)',
+                  activeB: bCol,
+                  explanationHtml: `Mnożymy przez <span class="chip chip-b">0</span>: <span class="chip chip-b">0</span> × <span class="chip chip-a">${factorA.calcDigits}</span> = <span class="chip chip-res">${zerosStr}</span>. Wpisujemy wiersz zer przesunięty w lewo o ${shift} ${shift === 1 ? 'kratkę' : 'kratki'}.`
+                });
+
+                pRow.freshCol = null;
+                plannedRowIdx++;
+                continue;
+              }
+            }
+
+            // Mnożenie przez cyfrę dB > 0
+            const pRow = partialsState[plannedRowIdx];
+            pRow.visible = true;
+            let carry = 0;
+
+            for (let aIdxFromRight = 0; aIdxFromRight < aCalcLen; aIdxFromRight++) {
+              const aCol = rightCol - aIdxFromRight;
+              const dA = Number(factorA.calcDigits[aCalcLen - 1 - aIdxFromRight]);
+              const targetCol = rightCol - shift - aIdxFromRight;
+
+              const prod = dB * dA;
+              const total = prod + carry;
+              const writeDigit = total % 10;
+              const newCarry = Math.floor(total / 10);
+
+              pRow.digits[targetCol] = String(writeDigit);
+              pRow.freshCol = targetCol;
+
+              if (!needsAddition) {
+                resultDigits[targetCol] = String(writeDigit);
+              }
+
+              // Przeniesienie z mnożenia pokazujemy nad kolejną cyfrą czynnika A (aCol - 1)
+              let freshCarryCol = null;
+              if (newCarry > 0) {
+                const carryCol = aCol - 1;
+                if (carryCol >= 1) {
+                  mulCarries[carryCol] = newCarry;
+                  freshCarryCol = carryCol;
+                }
+              }
+
+              // Budowanie opisu dydaktycznego po polsku
+              let calcText = `<span class="chip chip-b">${dB}</span> × <span class="chip chip-a">${dA}</span>`;
+              if (carry > 0) {
+                calcText += ` + <span class="chip chip-mul-carry">${carry}</span> = <span class="chip chip-num">${total}</span>`;
+              } else {
+                calcText += ` = <span class="chip chip-num">${total}</span>`;
+              }
+
+              let actionText = '';
+              if (newCarry > 0) {
+                actionText = ` → wpisujemy <span class="chip chip-res">${writeDigit}</span>, a <span class="chip chip-mul-carry">${newCarry}</span> zapamiętujemy (przenosimy dalej).`;
+              } else {
+                actionText = ` → wpisujemy <span class="chip chip-res">${writeDigit}</span>.`;
+              }
+
+              pushStep({
+                stage: 'multiply',
+                stageLabel: 'Etap: Mnożenie',
+                title: `Mnożenie przez cyfrę ${dB}`,
+                activeA: aCol,
+                activeB: bCol,
+                freshMulCarryCol: freshCarryCol,
+                freshResultCols: !needsAddition ? [targetCol] : [],
+                explanationHtml: calcText + actionText
+              });
+
+              pRow.freshCol = null;
+              carry = newCarry;
+            }
+
+            // Jeśli po najbardziej lewej cyfrze czynnika A zostało przeniesienie, dopisujemy je w osobnym kroku
+            if (carry > 0) {
+              const extraCol = rightCol - shift - aCalcLen;
+              pRow.digits[extraCol] = String(carry);
+              pRow.freshCol = extraCol;
+              if (!needsAddition) {
+                resultDigits[extraCol] = String(carry);
+              }
+
+              pushStep({
+                stage: 'multiply',
+                stageLabel: 'Etap: Mnożenie',
+                title: `Dopisanie przeniesienia (${carry})`,
+                activeB: bCol,
+                freshResultCols: !needsAddition ? [extraCol] : [],
+                explanationHtml: `Nie ma już więcej cyfr w pierwszym czynniku, więc zapamiętane przeniesienie <span class="chip chip-mul-carry">${carry}</span> dopisujemy na początku wiersza jako <span class="chip chip-res">${carry}</span>.`
+              });
+
+              pRow.freshCol = null;
+            }
+
+            plannedRowIdx++;
+          }
+
+          // Czyścimy przeniesienia z mnożenia po zakończeniu całego Etapu 1
+          mulCarries = {};
+        }
+
+        // =======================================================
+        // ETAP 2: DODAWANIE ILOCZYNÓW CZĄSTKOWYCH (gdy >= 2 wiersze)
+        // =======================================================
+        if (needsAddition) {
+          showAddSection = true;
+          pushStep({
+            stage: 'add',
+            stageLabel: 'Etap: Dodawanie',
+            title: 'Przejście do dodawania iloczynów cząstkowych',
+            explanationHtml: 'Wszystkie iloczyny cząstkowe zostały obliczone. Stawiamy znak <span class="chip chip-add-carry">+</span> oraz poziomą kreskę i dodajemy liczby kolumna po kolumnie od prawej strony.'
+          });
+
+          // Wyznaczamy zakres kolumn, w których występują jakiekolwiek cyfry w iloczynach cząstkowych
+          let leftmostPartialCol = rightCol;
+          partialsState.forEach((pRow) => {
+            Object.keys(pRow.digits).forEach((colKey) => {
+              const c = Number(colKey);
+              if (c < leftmostPartialCol) leftmostPartialCol = c;
+            });
+          });
+
+          let addCarry = 0;
+
+          for (let col = rightCol; col >= leftmostPartialCol; col--) {
+            const colDigits = [];
+            partialsState.forEach((pRow) => {
+              if (pRow.digits[col] !== undefined) {
+                colDigits.push(Number(pRow.digits[col]));
+              }
+            });
+
+            const incomingCarry = addCarry;
+            const colSum = colDigits.reduce((acc, v) => acc + v, 0) + incomingCarry;
+            const writeDigit = colSum % 10;
+            const nextAddCarry = Math.floor(colSum / 10);
+
+            resultDigits[col] = String(writeDigit);
+
+            let freshAddCol = null;
+            if (nextAddCarry > 0 && col - 1 >= 1) {
+              addCarries[col - 1] = nextAddCarry;
+              freshAddCol = col - 1;
+            }
+
+            // Opis słowny dodawania kolumny
+            let sumExpr = '';
+            if (colDigits.length === 1 && incomingCarry === 0) {
+              sumExpr = `W tej kolumnie stoi tylko cyfra <span class="chip chip-num">${colDigits[0]}</span> → przepisujemy <span class="chip chip-res">${writeDigit}</span> pod kreską.`;
+            } else {
+              const parts = colDigits.map(d => `<span class="chip chip-num">${d}</span>`);
+              if (incomingCarry > 0) {
+                parts.push(`<span class="chip chip-add-carry">${incomingCarry}</span> (z przeniesienia)`);
+              }
+              sumExpr = `${parts.join(' + ')} = <span class="chip chip-num">${colSum}</span>`;
+              if (nextAddCarry > 0) {
+                sumExpr += ` → wpisujemy <span class="chip chip-res">${writeDigit}</span>, a <span class="chip chip-add-carry">${nextAddCarry}</span> przenosimy do następnej kolumny.`;
+              } else {
+                sumExpr += ` → wpisujemy <span class="chip chip-res">${writeDigit}</span> pod kreską.`;
+              }
+            }
+
+            pushStep({
+              stage: 'add',
+              stageLabel: 'Etap: Dodawanie',
+              title: 'Dodawanie w kolumnie',
+              activeAddCol: col,
+              freshAddCarryCol: freshAddCol,
+              freshResultCols: [col],
+              explanationHtml: sumExpr
+            });
+
+            addCarry = nextAddCarry;
+          }
+
+          // Jeśli po najbardziej lewej kolumnie dodawania zostało przeniesienie
+          if (addCarry > 0) {
+            const extraAddCol = leftmostPartialCol - 1;
+            resultDigits[extraAddCol] = String(addCarry);
+
+            pushStep({
+              stage: 'add',
+              stageLabel: 'Etap: Dodawanie',
+              title: `Dopisanie przeniesienia z dodawania (${addCarry})`,
+              activeAddCol: extraAddCol,
+              freshResultCols: [extraAddCol],
+              explanationHtml: `Przeniesienie <span class="chip chip-add-carry">${addCarry}</span> z ostatniej kolumny dodawania spada na początek wyniku jako <span class="chip chip-res">${addCarry}</span>.`
+            });
+          }
+        }
+
+        // =======================================================
+        // ETAP 3: PRZECINEK DZIESIĘTNY (gdy totalDecPlaces > 0)
+        // =======================================================
+        if (totalDecPlaces > 0) {
+          const addedLeadingCols = [];
+          // Upewniamy się, że wynik ma cyfry co najmniej od kolumny resultCommaCol do rightCol
+          // (np. 0,15 × 0,4 -> najpierw mamy "60", a musimy dopisać dwa zera z przodu -> "0060" -> "0,060")
+          for (let col = rightCol; col >= resultCommaCol; col--) {
+            if (resultDigits[col] === undefined) {
+              resultDigits[col] = '0';
+              if (!needsAddition) {
+                partialsState[0].digits[col] = '0';
+              }
+              addedLeadingCols.push(col);
+            }
+          }
+
+          showResultComma = true;
+
+          // Zbudowanie jasnego wyjaśnienia po polsku
+          let decExplain = '';
+          if (factorA.decPlaces > 0 && factorB.decPlaces > 0) {
+            decExplain = `Pierwszy czynnik ma <span class="chip chip-dec">${pluralCyfry(factorA.decPlaces)}</span> po przecinku, a drugi ma <span class="chip chip-dec">${pluralCyfry(factorB.decPlaces)}</span> — razem <span class="chip chip-dec">${pluralCyfry(totalDecPlaces)}</span> po przecinku. `;
+          } else if (factorA.decPlaces > 0) {
+            decExplain = `Pierwszy czynnik ma <span class="chip chip-dec">${pluralCyfry(factorA.decPlaces)}</span> po przecinku, a drugi jest liczbą całkowitą — razem <span class="chip chip-dec">${pluralCyfry(totalDecPlaces)}</span> po przecinku. `;
+          } else {
+            decExplain = `Pierwszy czynnik jest liczbą całkowitą, a drugi ma <span class="chip chip-dec">${pluralCyfry(factorB.decPlaces)}</span> po przecinku — razem <span class="chip chip-dec">${pluralCyfry(totalDecPlaces)}</span> po przecinku. `;
+          }
+
+          if (addedLeadingCols.length > 0) {
+            decExplain += `Ponieważ w wyniku brakuje cyfr z przodu, <strong>dopisujemy brakujące zera wiodące</strong> i oddzielamy przecinkiem <span class="chip chip-dec">${pluralCyfry(totalDecPlaces)}</span> od prawej strony.`;
+          } else {
+            decExplain += `Oddzielamy przecinkiem <span class="chip chip-dec">${pluralCyfry(totalDecPlaces)}</span> od prawej strony wyniku.`;
+          }
+
+          pushStep({
+            stage: 'decimal',
+            stageLabel: 'Etap: Przecinek',
+            title: 'Wstawienie przecinka dziesiętnego',
+            highlightDecimals: true,
+            freshResultCols: addedLeadingCols,
+            freshResultComma: true,
+            explanationHtml: decExplain
+          });
+        }
+
+        // =======================================================
+        // KROK KOŃCOWY: PODSUMOWANIE
+        // =======================================================
+        const sortedCols = Object.keys(resultDigits).map(Number).sort((a, b) => a - b);
+        let fullResultStr = '';
+        sortedCols.forEach((col) => {
+          fullResultStr += resultDigits[col];
+          if (totalDecPlaces > 0 && col === resultCommaCol) {
+            fullResultStr += ',';
+          }
+        });
+
+        const simplifiedStr = simplifyDecimalString(fullResultStr);
+        const hasSimplified = simplifiedStr !== fullResultStr;
+        const equationBanner = hasSimplified
+          ? `${factorA.display} × ${factorB.display} = ${fullResultStr} = ${simplifiedStr}`
+          : `${factorA.display} × ${factorB.display} = ${fullResultStr}`;
+
+        let doneHtml = 'Mnożenie pisemne zostało zakończone! ';
+        if (hasSimplified) {
+          doneHtml += 'Zera na samym końcu części ułamkowej można opuścić, otrzymując uproszczony wynik:';
+        } else {
+          doneHtml += 'Pełny wynik działania:';
+        }
+        doneHtml += `<br><div class="summary-banner">${equationBanner}</div>`;
+
+        pushStep({
+          stage: 'done',
+          stageLabel: 'Podsumowanie',
+          title: 'Gotowe! Wynik końcowy',
+          explanationHtml: doneHtml
+        });
+
+        return {
+          factorA,
+          factorB,
+          totalCols,
+          rightCol,
+          factorACells,
+          factorBCells,
+          factorACommaCol,
+          factorBCommaCol,
+          resultCommaCol,
+          totalDecPlaces,
+          needsAddition,
+          steps
+        };
+      }
+
+      // =========================================================
+      // RENDEROWANIE KARTKI W KRATKĘ I INTERFEJSU
+      // =========================================================
+
+      function showError(message, invalidField = null) {
+        elFactorA.classList.toggle('is-invalid', invalidField === 'a' || invalidField === 'both');
+        elFactorB.classList.toggle('is-invalid', invalidField === 'b' || invalidField === 'both');
+
+        if (message) {
+          elErrorBox.textContent = message;
+          elErrorBox.classList.add('visible');
+        } else {
+          elErrorBox.textContent = '';
+          elErrorBox.classList.remove('visible');
+        }
+      }
+
+      function renderVisualization() {
+        const model = state.model;
+        if (!model) return;
+
+        const step = model.steps[state.currentStep];
+        const totalSteps = model.steps.length - 1;
+        const {
+          totalCols,
+          rightCol,
+          factorACells,
+          factorBCells,
+          factorACommaCol,
+          factorBCommaCol,
+          resultCommaCol,
+          totalDecPlaces,
+          needsAddition
+        } = model;
+
+        // 1. Odznaki etapu, licznik i pasek postępu
+        elStageBadge.textContent = step.stageLabel;
+        elStageBadge.className = `stage-badge stage-${step.stage}`;
+        elStepCounter.textContent = `Krok ${state.currentStep} z ${totalSteps}`;
+        const pct = totalSteps > 0 ? Math.round((state.currentStep / totalSteps) * 100) : 100;
+        elProgressFill.style.width = `${pct}%`;
+
+        // 2. Siatka kratkowa
+        elMathGrid.style.gridTemplateColumns = `repeat(${totalCols}, var(--cell-size))`;
+        elMathGrid.innerHTML = '';
+
+        // Helper tworzący przecinek na prawej krawędzi komórki
+        function appendComma(cell, isResult, isFresh) {
+          const comma = document.createElement('span');
+          comma.className = 'comma-overlay';
+          if (isResult) comma.classList.add('is-result-comma');
+          if (isFresh) comma.classList.add('is-fresh-comma');
+          comma.textContent = ',';
+          cell.appendChild(comma);
+        }
+
+        // --- WIERSZ 1: Przeniesienia dla mnożenia (nad 1. czynnikiem) ---
+        for (let c = 0; c < totalCols; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'grid-cell cell-mul-carry';
+          const carryVal = step.mulCarries[c];
+          if (carryVal !== undefined) {
+            const pill = document.createElement('span');
+            pill.className = 'carry-pill-mul';
+            if (step.freshMulCarryCol === c) pill.classList.add('is-fresh');
+            pill.textContent = String(carryVal);
+            pill.title = `Przeniesienie z mnożenia: ${carryVal}`;
+            cell.appendChild(pill);
+          }
+          elMathGrid.appendChild(cell);
+        }
+
+        // --- WIERSZ 2: Pierwszy czynnik (górny) ---
+        for (let c = 0; c < totalCols; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'grid-cell';
+          if (step.activeA === c) cell.classList.add('is-active-a');
+          if (step.highlightDecimals && factorACommaCol !== null && c > factorACommaCol && factorACells[c] !== undefined) {
+            cell.classList.add('is-dec-highlight');
+          }
+
+          if (factorACells[c] !== undefined) {
+            cell.textContent = factorACells[c];
+          }
+          if (factorACommaCol === c) {
+            appendComma(cell, false, false);
+          }
+          elMathGrid.appendChild(cell);
+        }
+
+        // --- WIERSZ 3: Znak × + Drugi czynnik (dolny) + gruba kreska ---
+        for (let c = 0; c < totalCols; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'grid-cell row-line';
+          if (c === 0) {
+            cell.classList.add('cell-op');
+            cell.textContent = '×';
+          } else {
+            if (step.activeB === c) cell.classList.add('is-active-b');
+            if (step.highlightDecimals && factorBCommaCol !== null && c > factorBCommaCol && factorBCells[c] !== undefined) {
+              cell.classList.add('is-dec-highlight');
+            }
+            if (factorBCells[c] !== undefined) {
+              cell.textContent = factorBCells[c];
+            }
+            if (factorBCommaCol === c) {
+              appendComma(cell, false, false);
+            }
+          }
+          elMathGrid.appendChild(cell);
+        }
+
+        // --- WIERSZ PRZENIESIEŃ DODAWANIA (gdy widoczna sekcja dodawania) ---
+        if (needsAddition && step.showAddSection) {
+          for (let c = 0; c < totalCols; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell cell-add-carry';
+            if (step.activeAddCol === c) cell.classList.add('is-add-col');
+
+            const addCarryVal = step.addCarries[c];
+            if (addCarryVal !== undefined) {
+              const pill = document.createElement('span');
+              pill.className = 'carry-pill-add';
+              if (step.freshAddCarryCol === c) pill.classList.add('is-fresh');
+              pill.textContent = String(addCarryVal);
+              pill.title = `Przeniesienie z dodawania: ${addCarryVal}`;
+              cell.appendChild(pill);
+            }
+            elMathGrid.appendChild(cell);
+          }
+        }
+
+        // --- WIERSZE ILOCZYNÓW CZĄSTKOWYCH (lub pojedynczy wiersz wyniku dla 1-cyfrowego mnożnika) ---
+        if (!needsAddition) {
+          // 1 cyfra znacząca w mnożniku -> wynik pojawia się bezpośrednio pod pierwszą kreską
+          const singleRow = step.partials[0];
+          for (let c = 0; c < totalCols; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell cell-result';
+            if (step.highlightDecimals && resultCommaCol !== null && c > resultCommaCol && step.resultDigits[c] !== undefined) {
+              cell.classList.add('is-dec-highlight');
+            }
+
+            const ch = step.resultDigits[c] !== undefined ? step.resultDigits[c] : singleRow.digits[c];
+            if (ch !== undefined) {
+              const span = document.createElement('span');
+              span.textContent = ch;
+              if (step.freshResultCols.has(c) || singleRow.freshCol === c) {
+                span.classList.add('digit-pop');
+              }
+              if (step.stage === 'decimal' && step.freshResultCols.has(c)) {
+                span.classList.add('digit-leading-zero');
+              }
+              cell.appendChild(span);
+            }
+
+            if (step.showResultComma && resultCommaCol === c) {
+              appendComma(cell, true, step.freshResultComma);
+            }
+            elMathGrid.appendChild(cell);
+          }
+        } else {
+          // Wiele iloczynów cząstkowych
+          const lastPartialIdx = step.partials.length - 1;
+
+          step.partials.forEach((pRow, rowIdx) => {
+            const isLastPartial = rowIdx === lastPartialIdx;
+            const showPlusHere = isLastPartial && step.showAddSection;
+
+            for (let c = 0; c < totalCols; c++) {
+              const cell = document.createElement('div');
+              cell.className = 'grid-cell cell-partial';
+              if (isLastPartial && step.showAddSection) {
+                cell.classList.add('row-line');
+              }
+              if (step.activeAddCol === c) {
+                cell.classList.add('is-add-col');
+              }
+
+              if (c === 0) {
+                if (showPlusHere) {
+                  cell.classList.add('cell-op', 'cell-op-plus');
+                  cell.textContent = '+';
+                }
+              } else if (pRow.visible) {
+                if (pRow.digits[c] !== undefined) {
+                  const span = document.createElement('span');
+                  span.textContent = pRow.digits[c];
+                  if (pRow.freshCol === c) {
+                    span.className = 'digit-pop';
+                  }
+                  cell.appendChild(span);
+                } else if (state.showShiftZeros && pRow.shift > 0 && c > rightCol - pRow.shift) {
+                  // Zera pomocnicze w przesunięciu po prawej stronie wiersza
+                  cell.classList.add('cell-shift-zero');
+                  const span = document.createElement('span');
+                  span.textContent = '0';
+                  span.title = 'Zero pomocnicze (przesunięcie wiersza)';
+                  cell.appendChild(span);
+                }
+              }
+
+              elMathGrid.appendChild(cell);
+            }
+          });
+
+          // --- WIERSZ WYNIKU KOŃCOWEGO (pod drugą kreską) ---
+          if (step.showAddSection) {
+            for (let c = 0; c < totalCols; c++) {
+              const cell = document.createElement('div');
+              cell.className = 'grid-cell cell-result';
+              if (step.activeAddCol === c) {
+                cell.classList.add('is-add-col');
+              }
+              if (step.highlightDecimals && resultCommaCol !== null && c > resultCommaCol && step.resultDigits[c] !== undefined) {
+                cell.classList.add('is-dec-highlight');
+              }
+
+              if (step.resultDigits[c] !== undefined) {
+                const span = document.createElement('span');
+                span.textContent = step.resultDigits[c];
+                if (step.freshResultCols.has(c)) {
+                  span.classList.add('digit-pop');
+                }
+                if (step.stage === 'decimal' && step.freshResultCols.has(c)) {
+                  span.classList.add('digit-leading-zero');
+                }
+                cell.appendChild(span);
+              }
+
+              if (step.showResultComma && resultCommaCol === c) {
+                appendComma(cell, true, step.freshResultComma);
+              }
+
+              elMathGrid.appendChild(cell);
+            }
+          }
+        }
+
+        // 3. Panel opisu dydaktycznego
+        elExplanationCard.className = `explanation-card theme-${step.stage}`;
+        elExplanationTitle.textContent = step.title;
+        elExplanationBody.innerHTML = step.explanationHtml;
+
+        // 4. Stan przycisków nawigacji
+        elBtnReset.disabled = state.currentStep === 0;
+        elBtnPrev.disabled = state.currentStep === 0;
+        elBtnNext.disabled = state.currentStep >= totalSteps;
+        elBtnShowAll.disabled = state.currentStep >= totalSteps;
+
+        updatePlayButtonUI();
+      }
+
+      // =========================================================
+      // STEROWANIE ODTWARZANIEM
+      // =========================================================
+
+      function stopAutoPlay() {
+        if (state.playTimer !== null) {
+          clearInterval(state.playTimer);
+          state.playTimer = null;
+        }
+        state.isPlaying = false;
+        updatePlayButtonUI();
+      }
+
+      function updatePlayButtonUI() {
+        if (state.isPlaying) {
+          elBtnPlay.textContent = '⏸ Pauza';
+          elBtnPlay.classList.add('is-playing');
+        } else {
+          elBtnPlay.textContent = '▶ Odtwarzaj';
+          elBtnPlay.classList.remove('is-playing');
+        }
+      }
+
+      function advanceOneStep() {
+        if (!state.model) return;
+        const lastIdx = state.model.steps.length - 1;
+        if (state.currentStep < lastIdx) {
+          state.currentStep++;
+          renderVisualization();
+          if (state.currentStep >= lastIdx) {
+            stopAutoPlay();
+          }
+        } else {
+          stopAutoPlay();
+        }
+      }
+
+      function toggleAutoPlay() {
+        if (!state.model) return;
+
+        if (state.isPlaying) {
+          stopAutoPlay();
+          return;
+        }
+
+        if (state.currentStep >= state.model.steps.length - 1) {
+          state.currentStep = 0;
+          renderVisualization();
+        }
+
+        state.isPlaying = true;
+        updatePlayButtonUI();
+        advanceOneStep();
+
+        if (state.isPlaying) {
+          const delay = SPEED_MAP[state.speedLevel].ms;
+          state.playTimer = setInterval(advanceOneStep, delay);
+        }
+      }
+
+      function handleCalculate() {
+        stopAutoPlay();
+
+        const resA = parseFactor(elFactorA.value, 'Pierwszy czynnik (górny)');
+        if (!resA.ok) {
+          showError(resA.error, 'a');
+          return;
+        }
+
+        const resB = parseFactor(elFactorB.value, 'Drugi czynnik (dolny)');
+        if (!resB.ok) {
+          showError(resB.error, 'b');
+          return;
+        }
+
+        showError('');
+        state.model = buildMultiplicationModel(resA.value, resB.value, state.skipZeroRows);
+        state.currentStep = 0;
+        renderVisualization();
+      }
+
+      // =========================================================
+      // ZDARZENIA (EVENT LISTENERS)
+      // =========================================================
+
+      elBtnCalculate.addEventListener('click', handleCalculate);
+
+      elBtnSwap.addEventListener('click', () => {
+        const tmp = elFactorA.value;
+        elFactorA.value = elFactorB.value;
+        elFactorB.value = tmp;
+        handleCalculate();
+      });
+
+      [elFactorA, elFactorB].forEach((input) => {
+        input.addEventListener('input', () => {
+          input.classList.remove('is-invalid');
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleCalculate();
+          }
+        });
+      });
+
+      // Gotowe przykłady edukacyjne
+      document.querySelectorAll('.btn-preset').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-preset');
+          if (PRESETS[key]) {
+            elFactorA.value = PRESETS[key].a;
+            elFactorB.value = PRESETS[key].b;
+            handleCalculate();
+          }
+        });
+      });
+
+      // Przełączniki opcji
+      elOptShiftZeros.addEventListener('change', () => {
+        state.showShiftZeros = elOptShiftZeros.checked;
+        renderVisualization();
+      });
+
+      elOptSkipZeroRows.addEventListener('change', () => {
+        state.skipZeroRows = elOptSkipZeroRows.checked;
+        handleCalculate();
+      });
+
+      // Przyciski nawigacji
+      elBtnReset.addEventListener('click', () => {
+        stopAutoPlay();
+        state.currentStep = 0;
+        renderVisualization();
+      });
+
+      elBtnPrev.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.currentStep > 0) {
+          state.currentStep--;
+          renderVisualization();
+        }
+      });
+
+      elBtnNext.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.model && state.currentStep < state.model.steps.length - 1) {
+          state.currentStep++;
+          renderVisualization();
+        }
+      });
+
+      elBtnPlay.addEventListener('click', toggleAutoPlay);
+
+      elBtnShowAll.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.model) {
+          state.currentStep = state.model.steps.length - 1;
+          renderVisualization();
+        }
+      });
+
+      // Suwak tempa animacji
+      elSpeedSlider.addEventListener('input', () => {
+        state.speedLevel = Number(elSpeedSlider.value);
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        if (state.isPlaying) {
+          stopAutoPlay();
+          toggleAutoPlay();
+        }
+      });
+
+      // Skróty klawiszowe (strzałki i Spacja)
+      document.addEventListener('keydown', (e) => {
+        const tag = document.activeElement ? document.activeElement.tagName : '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA') {
+          return;
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          elBtnNext.click();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          elBtnPrev.click();
+        } else if (e.code === 'Space') {
+          e.preventDefault();
+          toggleAutoPlay();
+        }
+      });
+
+      // Inicjalizacja aplikacji
+      window.addEventListener('load', () => {
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        handleCalculate();
+      });
+    })();
+  </script>
+</body>
+</html>

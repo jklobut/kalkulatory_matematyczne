@@ -1,0 +1,3855 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator wyznaczania NWD (Największego Wspólnego Dzielnika)</title>
+  <style>
+    /* =========================================================
+       ZMIENNE KOLORYSTYCZNE I TYPOGRAFIA (100% OFFLINE)
+       ========================================================= */
+    :root {
+      --bg-page: #f4f6fb;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-soft: #e2e8f0;
+
+      /* Kolory dydaktyczne */
+      --blue: #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-bg: #eff6ff;
+      --blue-border: #bfdbfe;
+      --blue-dark: #1e3a8a;
+
+      --green: #16a34a;
+      --green-bg: #dcfce7;
+      --green-border: #86efac;
+      --green-dark: #14532d;
+
+      --purple: #7c3aed;
+      --purple-bg: #f3e8ff;
+      --purple-border: #d8b4fe;
+      --purple-dark: #4c1d95;
+
+      --amber: #d97706;
+      --amber-bg: #fef3c7;
+      --amber-border: #fcd34d;
+      --amber-dark: #92400e;
+
+      --teal: #0d9488;
+      --teal-bg: #ccfbf1;
+      --teal-border: #5eead4;
+      --teal-dark: #115e59;
+
+      --rose: #e11d48;
+      --rose-bg: #ffe4e6;
+      --rose-border: #fda4af;
+      --rose-dark: #9f1239;
+
+      --error-bg: #fef2f2;
+      --error-border: #fca5a5;
+      --error-text: #991b1b;
+
+      /* Kartka w kratkę z zeszytu */
+      --paper-bg: #fffef9;
+      --paper-grid: #d4e4f4;
+      --paper-margin: #fca5a5;
+      --grid-step: 26px;
+
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 20px 16px 48px;
+    }
+
+    /* =========================================================
+       UKŁAD GŁÓWNY I NAGŁÓWEK
+       ========================================================= */
+    .app-wrapper {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .app-title-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .app-logo {
+      width: 48px;
+      height: 46px;
+      background: linear-gradient(135deg, #16a34a, #2563eb);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.94rem;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+      flex-shrink: 0;
+    }
+
+    .app-header h1 {
+      font-size: clamp(1.35rem, 3vw, 1.95rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .app-subtitle {
+      color: var(--text-muted);
+      font-size: 0.96rem;
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 365px 1fr;
+      gap: 22px;
+      align-items: start;
+      margin-bottom: 22px;
+    }
+
+    @media (max-width: 980px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* =========================================================
+       KARTY (PANELE)
+       ========================================================= */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-md);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 1.04rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text-main);
+    }
+
+    /* =========================================================
+       LEWY PANEL: DANE WEJŚCIOWE I PRZYKŁADY
+       ========================================================= */
+    .inputs-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .input-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .input-sub {
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .number-input {
+      width: 100%;
+      padding: 10px 13px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      background: #f8fafc;
+      border: 2px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .number-input:focus {
+      outline: none;
+      border-color: var(--blue);
+      background: #ffffff;
+    }
+
+    .number-input.is-invalid {
+      border-color: #dc2626;
+      background: var(--error-bg);
+    }
+
+    .btn-toggle-third {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1.5px dashed #cbd5e1;
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+      margin-bottom: 12px;
+    }
+
+    .btn-toggle-third:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: var(--blue-bg);
+    }
+
+    .btn-toggle-third.is-remove {
+      border-style: solid;
+      border-color: #fecaca;
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .btn-toggle-third.is-remove:hover {
+      background: #fee2e2;
+      border-color: #f87171;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.93rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #ffffff;
+      flex: 1;
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.24);
+    }
+
+    .btn-primary:hover {
+      background: var(--blue-hover);
+    }
+
+    .btn-secondary {
+      background: #f8fafc;
+      color: var(--text-main);
+      border-color: #cbd5e1;
+    }
+
+    .btn-secondary:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .error-box {
+      display: none;
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      border-left: 4px solid #dc2626;
+      color: var(--error-text);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.86rem;
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+
+    .error-box.visible {
+      display: block;
+    }
+
+    .presets-label {
+      font-size: 0.77rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .btn-preset {
+      background: var(--blue-bg);
+      color: var(--blue);
+      border: 1px solid var(--blue-border);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 1px;
+      font-family: var(--font-sans);
+    }
+
+    .btn-preset strong {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.86rem;
+      color: var(--blue-dark);
+    }
+
+    .btn-preset span {
+      font-size: 0.69rem;
+      color: #3b82f6;
+      line-height: 1.15;
+    }
+
+    .btn-preset:hover {
+      background: #dbeafe;
+      transform: translateY(-1px);
+    }
+
+    .options-box {
+      border-top: 1px solid var(--border-soft);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      line-height: 1.35;
+    }
+
+    .toggle-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      accent-color: var(--blue);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* =========================================================
+       PRAWY PANEL: ZAKŁADKI, POSTĘP, KARTKA W KRATKĘ
+       ========================================================= */
+    .viz-top-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .method-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-soft);
+      gap: 4px;
+    }
+
+    .method-tab {
+      padding: 7px 11px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.81rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .method-tab:hover {
+      color: var(--text-main);
+    }
+
+    .method-tab.is-active {
+      background: #ffffff;
+      color: var(--blue);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .badges-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stage-badge {
+      display: inline-flex;
+      align-items: center;
+      font-weight: 800;
+      font-size: 0.76rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border: 1px solid transparent;
+    }
+
+    .stage-start { background: var(--blue-bg); color: var(--blue-dark); border-color: var(--blue-border); }
+    .stage-factor { background: var(--amber-bg); color: var(--amber-dark); border-color: var(--amber-border); }
+    .stage-select { background: var(--green-bg); color: var(--green-dark); border-color: var(--green-border); }
+    .stage-multiply { background: var(--purple-bg); color: var(--purple-dark); border-color: var(--purple-border); }
+    .stage-divisors { background: var(--blue-bg); color: var(--blue-dark); border-color: var(--blue-border); }
+    .stage-common { background: var(--amber-bg); color: var(--amber-dark); border-color: var(--amber-border); }
+    .stage-euclid { background: var(--amber-bg); color: var(--amber-dark); border-color: var(--amber-border); }
+    .stage-stop { background: var(--rose-bg); color: var(--rose-dark); border-color: var(--rose-border); }
+    .stage-done { background: var(--green-bg); color: var(--green-dark); border-color: var(--green-border); }
+
+    .step-counter {
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb, #16a34a);
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    /* Kartka w kratkę z zeszytu */
+    .notebook-shell {
+      position: relative;
+      background-color: var(--paper-bg);
+      background-image:
+        linear-gradient(to right, var(--paper-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--paper-grid) 1px, transparent 1px);
+      background-size: var(--grid-step) var(--grid-step);
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.05), var(--shadow-sm);
+      overflow-x: auto;
+      padding: 24px 22px 26px 46px;
+      margin-bottom: 16px;
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .notebook-shell::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 28px;
+      width: 2px;
+      background-color: var(--paper-margin);
+      opacity: 0.72;
+      pointer-events: none;
+    }
+
+    /* =========================================================
+       METODA 1: ROZKŁAD NA CZYNNIKI (OSOBNO)
+       ========================================================= */
+    .sep-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .sep-tables-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 22px;
+      width: 100%;
+    }
+
+    .mini-factor-card {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      min-width: 170px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .mini-factor-card.is-active-card {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    }
+
+    .mini-card-head {
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .mini-bar-grid {
+      display: grid;
+      grid-template-columns: minmax(62px, auto) 3px minmax(46px, auto);
+      align-items: center;
+      row-gap: 3px;
+      justify-content: center;
+    }
+
+    .mb-left {
+      text-align: right;
+      padding: 3px 10px 3px 6px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.24rem;
+      font-weight: 800;
+      color: var(--blue-dark);
+      border-radius: 6px;
+    }
+
+    .mb-left.is-active {
+      background: var(--amber-bg);
+      color: var(--amber-dark);
+      box-shadow: inset 0 0 0 2px var(--amber-border);
+    }
+
+    .mb-left.is-one {
+      color: var(--green-dark);
+    }
+
+    .mb-left.is-one span {
+      display: inline-block;
+      padding: 0 7px;
+      border-radius: 6px;
+      background: var(--green-bg);
+      border: 1.5px dashed var(--green);
+    }
+
+    .mb-line {
+      width: 3px;
+      align-self: stretch;
+      background: #0f172a;
+      min-height: 32px;
+      border-radius: 2px;
+    }
+
+    .mb-right {
+      padding: 3px 6px 3px 10px;
+      display: flex;
+      align-items: center;
+      min-height: 32px;
+    }
+
+    .mb-factor {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      height: 30px;
+      padding: 0 7px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.04rem;
+      font-weight: 800;
+      background: var(--blue-bg);
+      color: var(--blue-dark);
+      border: 1.5px solid var(--blue-border);
+    }
+
+    .mb-factor.is-active {
+      background: var(--amber);
+      color: #ffffff;
+      border-color: var(--amber-dark);
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.25);
+      animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .mb-dash {
+      color: #94a3b8;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .mini-div-bubble {
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .div-pill {
+      display: inline-flex;
+      align-items: center;
+      background: var(--amber-bg);
+      border: 1.5px solid var(--amber-border);
+      color: var(--amber-dark);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 999px;
+      animation: popIn 0.25s ease;
+    }
+
+    /* Poziome kafelki parowania czynników */
+    .select-box {
+      width: 100%;
+      max-width: 690px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 2px solid var(--blue-border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .select-box-title {
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+
+    .horiz-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .horiz-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .horiz-num {
+      min-width: 72px;
+      text-align: right;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--blue-dark);
+      margin-right: 4px;
+    }
+
+    .ftile {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 8px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 800;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1.5px solid #cbd5e1;
+      position: relative;
+      transition: all 0.22s ease;
+    }
+
+    .ftile.is-paired {
+      background: var(--green-bg);
+      color: var(--green-dark);
+      border-color: var(--green);
+      box-shadow: 0 2px 5px rgba(22, 163, 74, 0.18);
+    }
+
+    .ftile.is-paired-now {
+      background: var(--green);
+      color: #ffffff;
+      border-color: var(--green-dark);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.28);
+      animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .ftile.is-unmatched {
+      background: #f1f5f9;
+      color: #94a3b8;
+      border-color: #e2e8f0;
+      text-decoration: line-through;
+      text-decoration-color: #94a3b8;
+      text-decoration-thickness: 2px;
+      opacity: 0.68;
+    }
+
+    .ftile.is-unmatched-now {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fca5a5;
+      text-decoration: line-through;
+      text-decoration-color: #dc2626;
+      text-decoration-thickness: 2.5px;
+    }
+
+    .pair-tag {
+      position: absolute;
+      top: -7px;
+      right: -6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #15803d;
+      color: #ffffff;
+      font-size: 0.62rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid #ffffff;
+    }
+
+    .dot-op {
+      font-weight: 900;
+      color: #94a3b8;
+      user-select: none;
+    }
+
+    /* Pasek mnożenia końcowego NWD (wspólny dla Metody 1 i 2) */
+    .mul-strip {
+      width: 100%;
+      max-width: 690px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 2px solid var(--purple-border);
+      border-radius: var(--radius-md);
+      padding: 13px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .mul-strip.is-done {
+      border-color: var(--green);
+      background: #f0fdf4;
+    }
+
+    .mul-strip-label {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--purple);
+    }
+
+    .mul-strip.is-done .mul-strip-label {
+      color: var(--green-dark);
+    }
+
+    .mul-eq-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .mul-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 9px;
+      border-radius: 7px;
+      background: var(--green-bg);
+      color: var(--green-dark);
+      border: 1.5px solid var(--green-border);
+    }
+
+    .mul-chip.is-used {
+      background: var(--purple-bg);
+      color: var(--purple-dark);
+      border-color: var(--purple-border);
+    }
+
+    .mul-chip.is-current {
+      background: var(--purple);
+      color: #ffffff;
+      border-color: var(--purple-dark);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25);
+      animation: popIn 0.28s ease;
+    }
+
+    .mul-running {
+      padding: 3px 11px;
+      border-radius: 8px;
+      background: var(--purple-bg);
+      color: var(--purple-dark);
+      border: 1.5px solid var(--purple);
+      font-size: 1.15rem;
+    }
+
+    .mul-strip.is-done .mul-running {
+      background: var(--green);
+      color: #ffffff;
+      border-color: var(--green-dark);
+      box-shadow: 0 3px 10px rgba(22, 163, 74, 0.28);
+    }
+
+    /* =========================================================
+       METODA 2: WSPÓLNA TABELA (SZYBKA METODA)
+       ========================================================= */
+    .shared-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .shared-table-card {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      overflow-x: auto;
+      max-width: 100%;
+    }
+
+    .shared-grid {
+      display: grid;
+      align-items: center;
+      row-gap: 4px;
+    }
+
+    .sg-cell {
+      text-align: center;
+      padding: 5px 12px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.32rem;
+      font-weight: 800;
+      color: var(--blue-dark);
+      border-radius: 7px;
+      min-width: 68px;
+      transition: all 0.2s ease;
+    }
+
+    .sg-cell.is-active-div {
+      background: var(--amber-bg);
+      color: var(--amber-dark);
+      box-shadow: inset 0 0 0 2px var(--amber-border);
+    }
+
+    .sg-cell.is-final-coprime {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1.5px dashed #94a3b8;
+    }
+
+    .sg-cell.is-new-val {
+      animation: popIn 0.26s ease;
+    }
+
+    .sg-sep {
+      width: 4px;
+      align-self: stretch;
+      background: #0f172a;
+      border-radius: 2px;
+      min-height: 38px;
+      margin: 0 4px;
+    }
+
+    .sg-factor-cell {
+      padding: 4px 10px 4px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+    }
+
+    .sg-factor-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      height: 36px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.18rem;
+      font-weight: 800;
+      background: var(--green-bg);
+      color: var(--green-dark);
+      border: 2px solid var(--green-border);
+      transition: all 0.2s ease;
+    }
+
+    .sg-factor-badge.is-active {
+      background: var(--green);
+      color: #ffffff;
+      border-color: var(--green-dark);
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.25);
+      animation: popIn 0.28s ease;
+    }
+
+    .sg-factor-badge.is-mul-highlight {
+      background: var(--purple);
+      color: #ffffff;
+      border-color: var(--purple-dark);
+      box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.24);
+    }
+
+    .sg-factor-badge.is-all-highlight {
+      background: var(--green);
+      color: #ffffff;
+      border-color: var(--green-dark);
+    }
+
+    .stop-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--rose-bg);
+      color: var(--rose-dark);
+      border: 1.5px solid var(--rose-border);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 800;
+      animation: popIn 0.28s ease;
+    }
+
+    /* =========================================================
+       METODA 3: WYPISYWANIE DZIELNIKÓW
+       ========================================================= */
+    .div-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .div-set-card {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 12px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .div-set-card.is-active-set {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    }
+
+    .div-set-card.is-done-set {
+      border-color: var(--green);
+      background: #f0fdf4;
+    }
+
+    .div-set-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--blue-dark);
+    }
+
+    .div-set-head sub {
+      font-size: 0.72em;
+      vertical-align: sub;
+      line-height: 0;
+    }
+
+    .div-set-count {
+      font-family: var(--font-sans);
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .div-pills {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .brace {
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #64748b;
+      user-select: none;
+    }
+
+    .dpill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 38px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.96rem;
+      font-weight: 800;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1.5px solid #cbd5e1;
+      transition: all 0.22s ease;
+    }
+
+    .dpill.is-revealed-now {
+      background: var(--blue-bg);
+      color: var(--blue-dark);
+      border-color: var(--blue-border);
+      animation: popIn 0.24s ease;
+    }
+
+    .dpill.is-common {
+      background: var(--amber-bg);
+      color: var(--amber-dark);
+      border-color: var(--amber);
+      box-shadow: 0 2px 5px rgba(217, 119, 6, 0.18);
+    }
+
+    .dpill.is-dimmed {
+      opacity: 0.42;
+    }
+
+    .dpill.is-gcd {
+      background: var(--green);
+      color: #ffffff;
+      border-color: var(--green-dark);
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.28);
+      transform: scale(1.08);
+      animation: popIn 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .common-summary-bar {
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid var(--amber-border);
+      border-radius: var(--radius-md);
+      padding: 12px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .common-summary-bar.is-done {
+      border-color: var(--green);
+      background: #f0fdf4;
+    }
+
+    .common-summary-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--amber-dark);
+    }
+
+    .common-summary-bar.is-done .common-summary-title {
+      color: var(--green-dark);
+    }
+
+    /* =========================================================
+       METODA 4: ALGORYTM EUKLIDESA
+       ========================================================= */
+    .euclid-wrapper {
+      width: 100%;
+      max-width: 700px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .euclid-stage-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      align-self: flex-start;
+      background: var(--blue-bg);
+      color: var(--blue-dark);
+      border: 1.5px solid var(--blue-border);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .euclid-row {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 11px 15px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .euclid-row.is-active {
+      border-color: var(--amber);
+      background: #fffbeb;
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.16);
+      animation: popIn 0.26s ease;
+    }
+
+    .euclid-row.is-zero-rem {
+      border-color: var(--green);
+      background: #f0fdf4;
+    }
+
+    .euclid-main-eq {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.12rem;
+      font-weight: 800;
+    }
+
+    .euclid-alt-eq {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      padding: 3px 9px;
+      border-radius: 7px;
+    }
+
+    .etok {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
+      border-radius: 7px;
+    }
+
+    .etok-a { background: var(--blue-bg); color: var(--blue-dark); border: 1.5px solid var(--blue-border); }
+    .etok-b { background: var(--teal-bg); color: var(--teal-dark); border: 1.5px solid var(--teal-border); }
+    .etok-q { color: #475569; padding: 2px 3px; }
+    .etok-r { background: var(--purple-bg); color: var(--purple-dark); border: 1.5px solid var(--purple-border); }
+    .etok-r-zero { background: #e2e8f0; color: #334155; border: 1.5px solid #94a3b8; }
+    .etok-gcd {
+      background: var(--green);
+      color: #ffffff;
+      border: 1.5px solid var(--green-dark);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+    }
+
+    .euclid-arrow-note {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin: -4px 0;
+    }
+
+    .euclid-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      padding-top: 4px;
+      justify-content: center;
+    }
+
+    .euclid-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .e-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* =========================================================
+       PANEL WYJAŚNIENIA DYDAKTYCZNEGO
+       ========================================================= */
+    .explanation-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid var(--blue);
+      border-radius: var(--radius-md);
+      padding: 15px 18px;
+      margin-bottom: 16px;
+      min-height: 104px;
+      transition: border-left-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .explanation-card.theme-factor,
+    .explanation-card.theme-common,
+    .explanation-card.theme-euclid {
+      background: #fffbeb;
+      border-color: #fde68a;
+      border-left-color: var(--amber);
+    }
+
+    .explanation-card.theme-select,
+    .explanation-card.theme-done {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      border-left-color: var(--green);
+    }
+
+    .explanation-card.theme-multiply {
+      background: #faf5ff;
+      border-color: #e9d5ff;
+      border-left-color: var(--purple);
+    }
+
+    .explanation-card.theme-stop {
+      background: #fff1f2;
+      border-color: #fecdd3;
+      border-left-color: var(--rose);
+    }
+
+    .explanation-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--blue);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .explanation-card.theme-factor .explanation-title,
+    .explanation-card.theme-common .explanation-title,
+    .explanation-card.theme-euclid .explanation-title { color: var(--amber-dark); }
+    .explanation-card.theme-select .explanation-title,
+    .explanation-card.theme-done .explanation-title { color: var(--green-dark); }
+    .explanation-card.theme-multiply .explanation-title { color: var(--purple-dark); }
+    .explanation-card.theme-stop .explanation-title { color: var(--rose-dark); }
+
+    .explanation-body {
+      font-size: 0.98rem;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    .chip {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-size: 0.95em;
+    }
+
+    .chip-blue { background: var(--blue-bg); color: var(--blue-dark); }
+    .chip-green { background: var(--green-bg); color: var(--green-dark); }
+    .chip-purple { background: var(--purple-bg); color: var(--purple-dark); }
+    .chip-amber { background: var(--amber-bg); color: var(--amber-dark); }
+    .chip-teal { background: var(--teal-bg); color: var(--teal-dark); }
+    .chip-rose { background: var(--rose-bg); color: var(--rose-dark); }
+    .chip-num { background: #e2e8f0; color: #0f172a; }
+
+    /* =========================================================
+       STEROWANIE KROKAMI I SUWAK TEMPA
+       ========================================================= */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .btn-ctrl {
+      padding: 10px 13px;
+      border-radius: var(--radius-md);
+      font-size: 0.87rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-ctrl:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }
+
+    .btn-ctrl:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ctrl-primary {
+      background: var(--blue);
+      color: #ffffff;
+      border-color: var(--blue);
+    }
+
+    .btn-ctrl-primary:hover:not(:disabled) {
+      background: var(--blue-hover);
+      border-color: var(--blue-hover);
+    }
+
+    .btn-ctrl-play {
+      background: #0f766e;
+      color: #ffffff;
+      border-color: #0f766e;
+      min-width: 118px;
+    }
+
+    .btn-ctrl-play:hover:not(:disabled) {
+      background: #115e59;
+      border-color: #115e59;
+    }
+
+    .btn-ctrl-play.is-playing {
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+
+    .btn-ctrl-play.is-playing:hover:not(:disabled) {
+      background: #b45309;
+      border-color: #b45309;
+    }
+
+    .speed-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+    }
+
+    .speed-slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .speed-slider {
+      width: 130px;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    .speed-label-pill {
+      min-width: 68px;
+      text-align: center;
+      background: #e2e8f0;
+      color: var(--text-main);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .shortcuts-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    /* =========================================================
+       KARTA PODSUMOWANIA I DODATKI EDUKACYJNE
+       ========================================================= */
+    .bottom-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .summary-card {
+      border-top: 4px solid var(--green);
+    }
+
+    .final-formula-banner {
+      background: #f0fdf4;
+      border: 2px solid var(--green-border);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .final-formula-math {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(1.05rem, 2.2vw, 1.32rem);
+      font-weight: 800;
+      color: var(--green-dark);
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    .final-formula-math sup {
+      font-size: 0.7em;
+      vertical-align: super;
+      line-height: 0;
+    }
+
+    .final-gcd-highlight {
+      display: inline-block;
+      background: var(--green);
+      color: #ffffff;
+      padding: 2px 10px;
+      border-radius: 8px;
+      margin-left: 2px;
+    }
+
+    .coprime-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--amber-bg);
+      color: var(--amber-dark);
+      border: 1.5px solid var(--amber);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+
+    .edu-addons-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 820px) {
+      .edu-addons-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .addon-tile {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 15px 16px;
+    }
+
+    .addon-title {
+      font-size: 0.84rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--blue);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .addon-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.48;
+    }
+
+    /* Wizualizacja skracania ułamka (flexbox kreska ułamkowa) */
+    .frac-reduce-box {
+      background: #ffffff;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+    }
+
+    .frac {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.15;
+      font-size: 1.04rem;
+      vertical-align: middle;
+    }
+
+    .frac-num {
+      padding: 0 7px 3px;
+      border-bottom: 2.5px solid #0f172a;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    .frac-den {
+      padding: 3px 7px 0;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    .frac.is-reduced .frac-num,
+    .frac.is-reduced .frac-den {
+      color: var(--green-dark);
+      border-color: var(--green-dark);
+    }
+
+    .frac-div-op {
+      color: var(--green);
+      font-size: 0.86rem;
+      margin-left: 3px;
+    }
+
+    .mixed-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--blue-dark);
+    }
+
+    .mixed-whole {
+      font-size: 1.32rem;
+      font-weight: 900;
+    }
+
+    .frac-tag {
+      font-family: var(--font-sans);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--green-bg);
+      color: var(--green-dark);
+      margin-left: auto;
+    }
+
+    .frac-tag.is-irreducible {
+      background: var(--amber-bg);
+      color: var(--amber-dark);
+    }
+
+    /* Sekcja NWW */
+    .nww-main-val {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+
+    .nww-formula-box {
+      background: #ffffff;
+      border: 1px solid var(--purple-border);
+      border-left: 4px solid var(--purple);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
+    .nww-formula-math {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      color: var(--purple-dark);
+      margin-top: 4px;
+      word-break: break-word;
+    }
+
+    /* Rozwijana ściągawka (<details>) */
+    .edu-details {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .edu-details summary {
+      padding: 13px 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      transition: background-color 0.15s;
+    }
+
+    .edu-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .edu-details summary:hover {
+      background: #f1f5f9;
+    }
+
+    .edu-details summary::after {
+      content: "▾";
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+
+    .edu-details[open] summary::after {
+      transform: rotate(180deg);
+    }
+
+    .edu-details-body {
+      padding: 16px 18px 20px;
+      border-top: 1px solid var(--border-soft);
+      background: #ffffff;
+    }
+
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 820px) {
+      .cheat-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .cheat-h3 {
+      font-size: 0.88rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+
+    .cheat-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .cheat-list li {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .shortcut-box {
+      background: #f0fdf4;
+      border: 1px solid var(--green-border);
+      border-left: 4px solid var(--green);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .shortcut-box:last-child {
+      margin-bottom: 0;
+    }
+
+    /* =========================================================
+       RESPONSYWNOŚĆ (TELEFON / TABLET)
+       ========================================================= */
+    @media (max-width: 600px) {
+      body {
+        padding: 14px 10px 34px;
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .notebook-shell {
+        padding: 18px 12px 20px 32px;
+        min-height: 240px;
+      }
+
+      .notebook-shell::before {
+        left: 18px;
+      }
+
+      .method-tabs {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .method-tab {
+        text-align: center;
+      }
+
+      .controls-bar {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      #btn-end {
+        grid-column: span 2;
+      }
+
+      .shortcuts-hint {
+        display: none;
+      }
+    }
+  
+    /* =========================================================
+       PRZYCISK POWROTU DO MENU GŁÓWNEGO
+       ========================================================= */
+    .top-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .btn-back-menu {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 15px;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #1e293b;
+      border: 1.5px solid #cbd5e1;
+      text-decoration: none;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-back-menu:hover,
+    .btn-back-menu:focus-visible {
+      background: #eff6ff;
+      border-color: #2563eb;
+      color: #2563eb;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <nav class="top-nav-bar" aria-label="Nawigacja główna">
+      <a href="index.html" class="btn-back-menu" title="Wróć do menu głównego">← Menu</a>
+    </nav>
+
+    <!-- NAGŁÓWEK -->
+    <header class="app-header">
+      <div class="app-title-row">
+        <div class="app-logo" aria-hidden="true">NWD</div>
+        <h1>Kalkulator wyznaczania NWD</h1>
+      </div>
+      <p class="app-subtitle">Największy Wspólny Dzielnik krok po kroku — poznaj cztery metody (rozkład na czynniki, wspólna tabela, wypisywanie dzielników i algorytm Euklidesa) oraz skracanie ułamków.</p>
+    </header>
+
+    <main class="main-grid">
+      <!-- LEWY PANEL: DANE WEJŚCIOWE I PRZYKŁADY -->
+      <section class="card" aria-label="Wprowadzanie liczb">
+        <h2 class="card-title">1. Wpisz liczby naturalne</h2>
+
+        <div class="inputs-stack">
+          <div class="input-group">
+            <label class="input-label-row" for="input-n1">
+              <span>Pierwsza liczba</span>
+              <span class="input-sub">1 – 10 000</span>
+            </label>
+            <input type="text" id="input-n1" class="number-input" inputmode="numeric" value="24" placeholder="np. 24" autocomplete="off">
+          </div>
+
+          <div class="input-group">
+            <label class="input-label-row" for="input-n2">
+              <span>Druga liczba</span>
+              <span class="input-sub">1 – 10 000</span>
+            </label>
+            <input type="text" id="input-n2" class="number-input" inputmode="numeric" value="36" placeholder="np. 36" autocomplete="off">
+          </div>
+
+          <div id="group-n3" class="input-group" style="display: none;">
+            <label class="input-label-row" for="input-n3">
+              <span>Trzecia liczba</span>
+              <span class="input-sub">1 – 10 000</span>
+            </label>
+            <input type="text" id="input-n3" class="number-input" inputmode="numeric" value="" placeholder="np. 30" autocomplete="off">
+          </div>
+        </div>
+
+        <button type="button" id="btn-toggle-third" class="btn-toggle-third">+ Dodaj 3. liczbę</button>
+
+        <div class="action-row">
+          <button type="button" id="btn-calc" class="btn btn-primary">Wyznacz NWD</button>
+          <button type="button" id="btn-random" class="btn btn-secondary" title="Wylosuj ciekawy zestaw liczb">🎲 Losuj</button>
+        </div>
+
+        <div id="error-box" class="error-box" role="alert"></div>
+
+        <div class="presets-label">Gotowe przykłady edukacyjne:</div>
+        <div class="presets-grid">
+          <button type="button" class="btn-preset" data-nums="24,36">
+            <strong>24 i 36</strong>
+            <span>klasyczny</span>
+          </button>
+          <button type="button" class="btn-preset" data-nums="18,45">
+            <strong>18 i 45</strong>
+            <span>czynnik 3</span>
+          </button>
+          <button type="button" class="btn-preset" data-nums="12,18,30">
+            <strong>12, 18 i 30</strong>
+            <span>3 liczby</span>
+          </button>
+          <button type="button" class="btn-preset" data-nums="14,25">
+            <strong>14 i 25</strong>
+            <span>względnie pierwsze</span>
+          </button>
+          <button type="button" class="btn-preset" data-nums="15,45">
+            <strong>15 i 45</strong>
+            <span>jedna dzieli drugą</span>
+          </button>
+          <button type="button" class="btn-preset" data-nums="48,18">
+            <strong>48 i 18</strong>
+            <span>algorytm Euklidesa</span>
+          </button>
+        </div>
+
+        <div class="options-box">
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-powers" checked>
+            <span>Zapis potęgowy</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-divisibility" checked>
+            <span>Podpowiedzi cech podzielności</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- PRAWY PANEL: WIZUALIZACJA I STEROWANIE -->
+      <section class="card" aria-label="Wizualizacja wyznaczania NWD">
+        <div class="viz-top-row">
+          <div class="method-tabs" role="tablist" aria-label="Wybór metody wyznaczania NWD">
+            <button type="button" id="tab-separate" class="method-tab is-active" role="tab" aria-selected="true">Rozkład (osobno)</button>
+            <button type="button" id="tab-table" class="method-tab" role="tab" aria-selected="false">Wspólna tabela</button>
+            <button type="button" id="tab-divisors" class="method-tab" role="tab" aria-selected="false">Dzielniki</button>
+            <button type="button" id="tab-euclid" class="method-tab" role="tab" aria-selected="false">Algorytm Euklidesa</button>
+          </div>
+          <div class="badges-group">
+            <span id="stage-badge" class="stage-badge stage-start">Start</span>
+            <span id="step-counter" class="step-counter">Krok 0 z 0</span>
+          </div>
+        </div>
+
+        <!-- PASEK POSTĘPU -->
+        <div class="progress-track" aria-hidden="true">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+
+        <!-- KARTKA W KRATKĘ -->
+        <div class="notebook-shell">
+          <div id="viz-container" style="width: 100%;" aria-live="polite"></div>
+        </div>
+
+        <!-- PANEL OPISU SŁOWNEGO -->
+        <div id="explanation-card" class="explanation-card">
+          <div id="explanation-title" class="explanation-title">Start</div>
+          <div id="explanation-body" class="explanation-body"></div>
+        </div>
+
+        <!-- PRZYCISKI STEROWANIA -->
+        <div class="controls-bar">
+          <button type="button" id="btn-start" class="btn-ctrl" title="Wróć od początku">⏮ Od początku</button>
+          <button type="button" id="btn-prev" class="btn-ctrl" title="Poprzedni krok (Strzałka w lewo)">◀ Poprzedni krok</button>
+          <button type="button" id="btn-play" class="btn-ctrl btn-ctrl-play" title="Start / Pauza (Spacja)">▶ Start</button>
+          <button type="button" id="btn-next" class="btn-ctrl btn-ctrl-primary" title="Następny krok (Strzałka w prawo)">Następny krok ▶</button>
+          <button type="button" id="btn-end" class="btn-ctrl" title="Pokaż cały wynik">⏭ Pokaż cały wynik</button>
+        </div>
+
+        <!-- SUWAK TEMPA I SKRÓTY -->
+        <div class="speed-row">
+          <label class="speed-slider-wrap" for="speed-slider">
+            <span>Tempo animacji:</span>
+            <input type="range" id="speed-slider" class="speed-slider" min="1" max="3" step="1" value="2">
+            <span id="speed-label" class="speed-label-pill">Średnio</span>
+          </label>
+          <div class="shortcuts-hint">
+            Skróty: <span class="kbd">←</span> <span class="kbd">→</span> krok, <span class="kbd">Spacja</span> start/pauza
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- DOLNE SEKCJE: PODSUMOWANIE I ŚCIĄGAWKA -->
+    <div class="bottom-stack">
+      <!-- KARTA PODSUMOWANIA I ZASTOSOWANIA -->
+      <section class="card summary-card" aria-label="Podsumowanie wyniku NWD">
+        <h2 class="card-title">Podsumowanie wyniku i zastosowania</h2>
+
+        <div id="final-formula-banner" class="final-formula-banner"></div>
+
+        <div class="edu-addons-grid">
+          <!-- ZASTOSOWANIE W UŁAMKACH (SKRACANIE) -->
+          <div class="addon-tile">
+            <div class="addon-title">✂️ Zastosowanie w ułamkach (Skracanie ułamka)</div>
+            <p id="frac-desc" class="addon-desc"></p>
+            <div id="frac-reduce-box" class="frac-reduce-box"></div>
+          </div>
+
+          <!-- POWIĄZANIE Z NWW -->
+          <div class="addon-tile">
+            <div class="addon-title">🔗 Powiązanie z NWW</div>
+            <div id="nww-main-val" class="nww-main-val"></div>
+            <div id="nww-formula-box" class="nww-formula-box"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ŚCIĄGAWKA EDUKACYJNA -->
+      <section class="card" aria-label="Ściągawka matematyczna">
+        <details class="edu-details">
+          <summary>📘 Ściągawka: jak szybko wyznaczyć NWD?</summary>
+          <div class="edu-details-body">
+            <div class="cheat-grid">
+              <div>
+                <h3 class="cheat-h3">4 metody wyznaczania NWD</h3>
+                <ul class="cheat-list">
+                  <li><strong>1. Rozkład na czynniki (osobno):</strong> Rozkładamy każdą liczbę na czynniki pierwsze, a następnie parujemy i wybieramy tylko te czynniki, które powtarzają się we <em>wszystkich</em> liczbach. Na koniec je mnożymy.</li>
+                  <li><strong>2. Wspólna tabela (szybka metoda):</strong> Dzielimy wszystkie liczby naraz wyłącznie przez ich <em>wspólne</em> dzielniki pierwsze. Gdy nie ma już wspólnego dzielnika, kończymy i mnożymy prawą kolumnę.</li>
+                  <li><strong>3. Wypisywanie dzielników:</strong> Wypisujemy zbiory dzielników każdej liczby, znajdujemy dzielniki wspólne i wybieramy spośród nich największy. Świetna dla małych liczb!</li>
+                  <li><strong>4. Algorytm Euklidesa:</strong> Dzielimy większą liczbę przez mniejszą z resztą, a potem poprzedni dzielnik przez resztę — aż reszta wyniesie 0. Ostatnia niezerowa reszta to NWD!</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 class="cheat-h3">3 sprytne skróty (w pamięci!)</h3>
+                <div class="shortcut-box">
+                  <strong>⚡ Skrót 1 — Jedna liczba dzieli drugą:</strong><br>
+                  Jeśli większa liczba dzieli się przez mniejszą bez reszty, to <strong>NWD jest tą mniejszą liczbą!</strong><br>
+                  <em>Przykład:</em> 45 dzieli się przez 15, więc <strong>NWD(15, 45) = 15</strong>.
+                </div>
+                <div class="shortcut-box">
+                  <strong>⚡ Skrót 2 — Liczby kolejne (sąsiadujące):</strong><br>
+                  Dwie kolejne liczby naturalne (np. 14 i 15 albo 99 i 100) są zawsze względnie pierwsze, więc ich <strong>NWD = 1</strong>!
+                </div>
+                <div class="shortcut-box">
+                  <strong>⚡ Skrót 3 — Liczby pierwsze:</strong><br>
+                  Dwie różne liczby pierwsze (np. 7 i 13) nie mają wspólnych dzielników poza 1, więc ich <strong>NWD = 1</strong>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * KALKULATOR WYZNACZANIA NWD (NAJWIĘKSZEGO WSPÓLNEGO DZIELNIKA)
+     * 100% offline, bez zewnętrznych zależności, dokładna arytmetyka BigInt.
+     */
+    (function () {
+      'use strict';
+
+      // =========================================================
+      // STAŁE I KONFIGURACJA
+      // =========================================================
+      const SPEED_MAP = {
+        1: { label: 'Wolno', ms: 2300 },
+        2: { label: 'Średnio', ms: 1400 },
+        3: { label: 'Szybko', ms: 720 }
+      };
+
+      const RANDOM_SETS_2 = [
+        [24, 36], [18, 45], [48, 18], [32, 48], [28, 42], [30, 45],
+        [36, 54], [40, 60], [42, 70], [45, 75], [56, 84], [60, 96],
+        [72, 108], [64, 96], [15, 45], [16, 40], [21, 35], [27, 45],
+        [14, 25], [15, 28], [21, 22], [18, 35] // kilka względnie pierwszych
+      ];
+
+      const RANDOM_SETS_3 = [
+        [12, 18, 30], [16, 24, 40], [18, 27, 45], [20, 30, 50],
+        [24, 36, 60], [15, 30, 45], [28, 42, 56], [36, 48, 72],
+        [12, 20, 28], [14, 21, 35], [18, 24, 36], [10, 15, 25],
+        [8, 12, 15], [9, 14, 21] // kilka względnie pierwszych
+      ];
+
+      const SMALL_PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29];
+
+      // =========================================================
+      // STAN APLIKACJI
+      // =========================================================
+      const state = {
+        hasThird: false,
+        activeTab: 'separate', // 'separate' | 'table' | 'divisors' | 'euclid'
+        showPowers: true,
+        showDivisibility: true,
+        model: null,
+        currentStep: 0,
+        isPlaying: false,
+        playTimer: null,
+        speedLevel: 2
+      };
+
+      // =========================================================
+      // REFERENCJE DO ELEMENTÓW DOM
+      // =========================================================
+      const elN1 = document.getElementById('input-n1');
+      const elN2 = document.getElementById('input-n2');
+      const elN3 = document.getElementById('input-n3');
+      const elGroupN3 = document.getElementById('group-n3');
+      const elBtnToggleThird = document.getElementById('btn-toggle-third');
+      const elBtnCalc = document.getElementById('btn-calc');
+      const elBtnRandom = document.getElementById('btn-random');
+      const elErrorBox = document.getElementById('error-box');
+      const elOptPowers = document.getElementById('opt-powers');
+      const elOptDivisibility = document.getElementById('opt-divisibility');
+
+      const elTabSeparate = document.getElementById('tab-separate');
+      const elTabTable = document.getElementById('tab-table');
+      const elTabDivisors = document.getElementById('tab-divisors');
+      const elTabEuclid = document.getElementById('tab-euclid');
+      const elStageBadge = document.getElementById('stage-badge');
+      const elStepCounter = document.getElementById('step-counter');
+      const elProgressFill = document.getElementById('progress-fill');
+      const elVizContainer = document.getElementById('viz-container');
+
+      const elExplanationCard = document.getElementById('explanation-card');
+      const elExplanationTitle = document.getElementById('explanation-title');
+      const elExplanationBody = document.getElementById('explanation-body');
+
+      const elBtnStart = document.getElementById('btn-start');
+      const elBtnPrev = document.getElementById('btn-prev');
+      const elBtnPlay = document.getElementById('btn-play');
+      const elBtnNext = document.getElementById('btn-next');
+      const elBtnEnd = document.getElementById('btn-end');
+      const elSpeedSlider = document.getElementById('speed-slider');
+      const elSpeedLabel = document.getElementById('speed-label');
+
+      const elFinalBanner = document.getElementById('final-formula-banner');
+      const elFracDesc = document.getElementById('frac-desc');
+      const elFracReduceBox = document.getElementById('frac-reduce-box');
+      const elNwwMainVal = document.getElementById('nww-main-val');
+      const elNwwFormulaBox = document.getElementById('nww-formula-box');
+
+      // =========================================================
+      // FUNKCJE MATEMATYCZNE
+      // =========================================================
+
+      function formatInt(val) {
+        return String(val).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+      }
+
+      function gcdBig(a, b) {
+        let x = a;
+        let y = b;
+        while (y !== 0n) {
+          const t = x % y;
+          x = y;
+          y = t;
+        }
+        return x;
+      }
+
+      function lcmBig(a, b) {
+        if (a === 0n || b === 0n) return 0n;
+        return (a / gcdBig(a, b)) * b;
+      }
+
+      function smallestPrimeFactor(n) {
+        if (n <= 1) return 1;
+        if (n % 2 === 0) return 2;
+        if (n % 3 === 0) return 3;
+        const limit = Math.floor(Math.sqrt(n));
+        for (let i = 5; i <= limit; i += 6) {
+          if (n % i === 0) return i;
+          if (n % (i + 2) === 0) return i + 2;
+        }
+        return n;
+      }
+
+      function factorizeNumber(n) {
+        const divisions = [];
+        let curr = n;
+        while (curr > 1) {
+          const p = smallestPrimeFactor(curr);
+          const q = curr / p;
+          divisions.push({ dividend: curr, factor: p, quotient: q });
+          curr = q;
+        }
+        return divisions;
+      }
+
+      function getAllDivisors(n) {
+        const small = [];
+        const large = [];
+        const limit = Math.floor(Math.sqrt(n));
+        for (let i = 1; i <= limit; i++) {
+          if (n % i === 0) {
+            small.push(i);
+            if (i !== n / i) {
+              large.push(n / i);
+            }
+          }
+        }
+        return small.concat(large.reverse());
+      }
+
+      function divisibilityHintHtml(n, p) {
+        if (p === n) {
+          return `Liczba <span class="chip chip-blue">${formatInt(n)}</span> jest <strong>liczbą pierwszą</strong>, więc dzieli się tylko przez samą siebie.`;
+        }
+        if (p === 2) {
+          return `Liczba <span class="chip chip-blue">${formatInt(n)}</span> jest <strong>parzysta</strong> (kończy się cyfrą ${n % 10}), więc dzieli się przez <span class="chip chip-green">2</span>.`;
+        }
+        if (p === 3) {
+          const digits = String(n).split('').map(Number);
+          const sum = digits.reduce((a, b) => a + b, 0);
+          return `<strong>Suma cyfr</strong> liczby <span class="chip chip-blue">${formatInt(n)}</span> wynosi ${digits.join(' + ')} = ${sum} (dzieli się przez 3), więc dzielimy przez <span class="chip chip-green">3</span>.`;
+        }
+        if (p === 5) {
+          return `Liczba <span class="chip chip-blue">${formatInt(n)}</span> kończy się cyfrą <strong>${n % 10}</strong>, więc dzieli się przez <span class="chip chip-green">5</span>.`;
+        }
+        const smaller = SMALL_PRIMES.filter(x => x < p).slice(0, 4).join(', ');
+        return `Liczba <span class="chip chip-blue">${formatInt(n)}</span> nie dzieli się przez mniejsze liczby pierwsze (${smaller}${p > 11 ? '...' : ''}) — najmniejszym dzielnikiem jest <span class="chip chip-green">${formatInt(p)}</span>.`;
+      }
+
+      function pluralRazy(n) {
+        return n === 1 ? '1 raz' : `${n} razy`;
+      }
+
+      // =========================================================
+      // BUDOWANIE MODELU I KROKÓW DLA WSZYSTKICH 4 METOD
+      // =========================================================
+
+      function buildModel(nums) {
+        const bigNums = nums.map(n => BigInt(n));
+        const nwd = bigNums.reduce((acc, v) => gcdBig(acc, v));
+        const nww = bigNums.reduce((acc, v) => lcmBig(acc, v));
+
+        const factorizations = nums.map(n => factorizeNumber(n));
+        const factorsPerNum = factorizations.map(divs => divs.map(d => d.factor));
+
+        // Zbieramy unikalne czynniki pierwsze ze wszystkich liczb
+        const primeSet = new Set();
+        factorsPerNum.forEach(arr => arr.forEach(p => primeSet.add(p)));
+        const uniquePrimes = Array.from(primeSet).sort((a, b) => a - b);
+
+        // Dla każdej liczby pierwszej wyznaczamy MINIMALNĄ liczbę wystąpień (część wspólną dla NWD)
+        const primeStats = uniquePrimes.map((p) => {
+          const counts = factorsPerNum.map(arr => arr.filter(x => x === p).length);
+          const minCount = Math.min(...counts);
+          return { prime: p, counts, minCount };
+        });
+
+        const gcdGrouped = primeStats.filter(s => s.minCount > 0).map(s => ({ prime: s.prime, exp: s.minCount }));
+        const gcdFactors = [];
+        gcdGrouped.forEach(({ prime, exp }) => {
+          for (let i = 0; i < exp; i++) gcdFactors.push(prime);
+        });
+
+        // Zbudowanie kroków dla każdej z 4 metod
+        const separateSteps = buildSeparateSteps(nums, factorizations, factorsPerNum, primeStats, gcdFactors, nwd);
+        const tableSteps = buildSharedTableSteps(nums, nwd);
+        const divisorsSteps = buildDivisorsSteps(nums, Number(nwd));
+        const euclidSteps = buildEuclidSteps(nums, Number(nwd));
+
+        return {
+          nums,
+          nwd,
+          nww,
+          factorizations,
+          factorsPerNum,
+          primeStats,
+          gcdGrouped,
+          gcdFactors,
+          separateSteps,
+          tableSteps,
+          divisorsSteps,
+          euclidSteps
+        };
+      }
+
+      // ---------------------------------------------------------
+      // ZAKŁADKA 1: ROZKŁAD NA CZYNNIKI (OSOBNO)
+      // ---------------------------------------------------------
+      function buildSeparateSteps(nums, factorizations, factorsPerNum, primeStats, gcdFactors, nwd) {
+        const steps = [];
+        const completedPerCard = nums.map(() => 0);
+        const numsLabel = nums.map(formatInt).join(', ');
+
+        // Dla każdego wystąpienia czynnika w każdej liczbie przypisujemy indeks pary (1..k) lub null (niepasujący)
+        // pairMatrix[numIdx][factorIdx] = pairNumber (1-based) lub null
+        const pairMatrix = factorsPerNum.map(arr => arr.map(() => null));
+        const pairPrimes = []; // lista kolejnych wspólnych par (np. [2, 2, 3] dla 24 i 36)
+
+        let pairCounter = 0;
+        primeStats.forEach(({ prime, minCount }) => {
+          if (minCount > 0) {
+            for (let k = 0; k < minCount; k++) {
+              pairCounter++;
+              pairPrimes.push(prime);
+              // W każdej liczbie znajdź k-te wystąpienie liczby `prime`
+              factorsPerNum.forEach((arr, numIdx) => {
+                let seen = 0;
+                for (let fIdx = 0; fIdx < arr.length; fIdx++) {
+                  if (arr[fIdx] === prime) {
+                    if (seen === k) {
+                      pairMatrix[numIdx][fIdx] = pairCounter;
+                      break;
+                    }
+                    seen++;
+                  }
+                }
+              });
+            }
+          }
+        });
+
+        // Krok 0: Start
+        steps.push({
+          stage: 'start',
+          stageLabel: 'Start',
+          title: 'Przygotowanie rozkładu na czynniki pierwsze',
+          explanationHtml: `Wyznaczymy <span class="chip chip-green">NWD(${numsLabel})</span>. Najpierw rozłożymy każdą z liczb osobno na czynniki pierwsze, potem wyszukamy i sparujemy <strong>wspólne czynniki</strong> obecne we wszystkich liczbach, a na końcu je pomnożymy.`,
+          completedPerCard: [...completedPerCard],
+          activeCardIdx: null,
+          activeDivIdx: null,
+          showSelectBox: false,
+          pairMatrix,
+          revealedPairsCount: 0,
+          activePairNum: null,
+          markUnmatched: false,
+          showMulStrip: false,
+          mulStepIdx: -1,
+          runningProduct: null
+        });
+
+        // Etap 1: Rozkład każdej liczby po kolei
+        nums.forEach((num, cardIdx) => {
+          const divs = factorizations[cardIdx];
+          if (divs.length === 0) {
+            steps.push({
+              stage: 'factor',
+              stageLabel: 'Rozkład',
+              title: `Liczba ${num} — przypadek szczególny`,
+              explanationHtml: `Liczba <span class="chip chip-blue">1</span> nie ma czynników pierwszych, więc nie da się jej dalej rozłożyć.`,
+              completedPerCard: [...completedPerCard],
+              activeCardIdx: cardIdx,
+              activeDivIdx: -1,
+              showSelectBox: false,
+              pairMatrix,
+              revealedPairsCount: 0,
+              activePairNum: null,
+              markUnmatched: false,
+              showMulStrip: false,
+              mulStepIdx: -1,
+              runningProduct: null
+            });
+            return;
+          }
+
+          divs.forEach((d, dIdx) => {
+            completedPerCard[cardIdx] = dIdx + 1;
+            steps.push({
+              stage: 'factor',
+              stageLabel: 'Rozkład',
+              title: `Rozkład liczby ${formatInt(num)}: ${formatInt(d.dividend)} : ${formatInt(d.factor)} = ${formatInt(d.quotient)}`,
+              divHintData: { n: d.dividend, p: d.factor },
+              baseExplain: `Dzielimy <span class="chip chip-blue">${formatInt(d.dividend)}</span> przez <span class="chip chip-green">${formatInt(d.factor)}</span>: <span class="chip chip-amber">${formatInt(d.dividend)} : ${formatInt(d.factor)} = ${formatInt(d.quotient)}</span>.${d.quotient === 1 ? ' Otrzymaliśmy <strong>1</strong> — rozkład tej liczby zakończony!' : ''}`,
+              completedPerCard: [...completedPerCard],
+              activeCardIdx: cardIdx,
+              activeDivIdx: dIdx,
+              showSelectBox: false,
+              pairMatrix,
+              revealedPairsCount: 0,
+              activePairNum: null,
+              markUnmatched: false,
+              showMulStrip: false,
+              mulStepIdx: -1,
+              runningProduct: null
+            });
+          });
+        });
+
+        // Etap 2: Parowanie wspólnych czynników
+        steps.push({
+          stage: 'select',
+          stageLabel: 'Parowanie',
+          title: 'Porównujemy rozkłady obok siebie',
+          explanationHtml: 'Wypisujemy czynniki pierwsze wszystkich liczb w poziomie. Szukamy takich czynników, które powtarzają się we <strong>wszystkich</strong> liczbach jednocześnie (każda wspólna grupa da nam jeden czynnik do NWD).',
+          completedPerCard: [...completedPerCard],
+          activeCardIdx: null,
+          activeDivIdx: null,
+          showSelectBox: true,
+          pairMatrix,
+          revealedPairsCount: 0,
+          activePairNum: null,
+          markUnmatched: false,
+          showMulStrip: false,
+          mulStepIdx: -1,
+          runningProduct: null
+        });
+
+        if (pairPrimes.length === 0) {
+          // Brak wspólnych czynników pierwszych -> NWD = 1
+          steps.push({
+            stage: 'done',
+            stageLabel: 'Wynik',
+            title: 'Brak wspólnych czynników pierwszych — NWD = 1!',
+            explanationHtml: `Żaden czynnik pierwszy nie występuje jednocześnie we wszystkich liczbach — pozostałe czynniki przekreślamy. Oznacza to, że liczby <strong>${numsLabel}</strong> są <strong>względnie pierwsze</strong>, a ich jedynym wspólnym dzielnikiem jest <span class="chip chip-green">1</span>. Zatem <span class="chip chip-green">NWD(${numsLabel}) = 1</span>.`,
+            completedPerCard: [...completedPerCard],
+            activeCardIdx: null,
+            activeDivIdx: null,
+            showSelectBox: true,
+            pairMatrix,
+            revealedPairsCount: 0,
+            activePairNum: null,
+            markUnmatched: true,
+            showMulStrip: true,
+            mulStepIdx: 0,
+            runningProduct: 1n
+          });
+        } else {
+          // Odkrywamy po jednej wspólnej parze/trójce
+          pairPrimes.forEach((p, idx) => {
+            const pairNum = idx + 1;
+            const groupWord = nums.length === 2 ? 'parę' : 'trójkę';
+            steps.push({
+              stage: 'select',
+              stageLabel: 'Parowanie',
+              title: `Wspólny czynnik nr ${pairNum}: liczba ${formatInt(p)}`,
+              explanationHtml: `Czynnik <span class="chip chip-green">${formatInt(p)}</span> występuje we wszystkich ${nums.length} liczbach! Łączymy go we wspólną ${groupWord} <strong>#${pairNum}</strong> (podświetloną na zielono) — wpiszemy go raz do iloczynu NWD.`,
+              completedPerCard: [...completedPerCard],
+              activeCardIdx: null,
+              activeDivIdx: null,
+              showSelectBox: true,
+              pairMatrix,
+              revealedPairsCount: pairNum,
+              activePairNum: pairNum,
+              markUnmatched: false,
+              showMulStrip: false,
+              mulStepIdx: -1,
+              runningProduct: null
+            });
+          });
+
+          // Czy istnieją jakieś niesparowane czynniki do przekreślenia?
+          const hasUnmatched = pairMatrix.some(row => row.some(cell => cell === null));
+          if (hasUnmatched) {
+            steps.push({
+              stage: 'select',
+              stageLabel: 'Parowanie',
+              title: 'Odrzucamy pozostałe czynniki bez pary',
+              explanationHtml: 'Pozostałe czynniki nie występują jednocześnie we wszystkich liczbach, dlatego <strong>przekreślamy je i pomijamy</strong>. Do obliczenia NWD bierzemy wyłącznie zielone wspólne grupy.',
+              completedPerCard: [...completedPerCard],
+              activeCardIdx: null,
+              activeDivIdx: null,
+              showSelectBox: true,
+              pairMatrix,
+              revealedPairsCount: pairPrimes.length,
+              activePairNum: null,
+              markUnmatched: true,
+              showMulStrip: false,
+              mulStepIdx: -1,
+              runningProduct: null
+            });
+          }
+
+          // Etap 3: Mnożenie wybranych wspólnych czynników
+          if (gcdFactors.length === 1) {
+            steps.push({
+              stage: 'done',
+              stageLabel: 'Wynik',
+              title: `Gotowe! NWD(${numsLabel}) = ${formatInt(nwd)}`,
+              explanationHtml: `Znaleźliśmy dokładnie jeden wspólny czynnik pierwszy (<span class="chip chip-green">${formatInt(gcdFactors[0])}</span>), dlatego <span class="chip chip-green">NWD(${numsLabel}) = ${formatInt(nwd)}</span>.`,
+              completedPerCard: [...completedPerCard],
+              activeCardIdx: null,
+              activeDivIdx: null,
+              showSelectBox: true,
+              pairMatrix,
+              revealedPairsCount: pairPrimes.length,
+              activePairNum: null,
+              markUnmatched: true,
+              showMulStrip: true,
+              mulStepIdx: 0,
+              runningProduct: nwd
+            });
+          } else {
+            let running = BigInt(gcdFactors[0]);
+            for (let i = 1; i < gcdFactors.length; i++) {
+              const prev = running;
+              const f = BigInt(gcdFactors[i]);
+              running = prev * f;
+              const isLast = i === gcdFactors.length - 1;
+
+              steps.push({
+                stage: isLast ? 'done' : 'multiply',
+                stageLabel: isLast ? 'Wynik' : 'Obliczanie NWD',
+                title: isLast
+                  ? `Gotowe! NWD(${numsLabel}) = ${formatInt(nwd)}`
+                  : `Mnożenie wspólnych czynników (${i} z ${gcdFactors.length - 1})`,
+                explanationHtml: isLast
+                  ? `Ostatnie mnożenie: <span class="chip chip-purple">${formatInt(prev)} · ${formatInt(f)} = ${formatInt(running)}</span>. Zatem <span class="chip chip-green">NWD(${numsLabel}) = ${formatInt(nwd)}</span>!`
+                  : `Mnożymy wybrane wspólne czynniki: <span class="chip chip-purple">${formatInt(prev)} · ${formatInt(f)} = ${formatInt(running)}</span>.`,
+                completedPerCard: [...completedPerCard],
+                activeCardIdx: null,
+                activeDivIdx: null,
+                showSelectBox: true,
+                pairMatrix,
+                revealedPairsCount: pairPrimes.length,
+                activePairNum: null,
+                markUnmatched: true,
+                showMulStrip: true,
+                mulStepIdx: i,
+                runningProduct: running
+              });
+            }
+          }
+        }
+
+        return steps;
+      }
+
+      // ---------------------------------------------------------
+      // ZAKŁADKA 2: WSPÓLNA TABELA (SZYBKA METODA)
+      // ---------------------------------------------------------
+      function buildSharedTableSteps(nums, nwd) {
+        const numsLabel = nums.map(formatInt).join(', ');
+
+        // Symulujemy dzielenie WSZYSTKICH liczb naraz przez ich wspólne dzielniki pierwsze
+        const tableRows = [[...nums]];
+        const rightFactors = [];
+
+        let curr = [...nums];
+        while (true) {
+          const rowGcd = Number(curr.map(BigInt).reduce((a, b) => gcdBig(a, b)));
+          if (rowGcd <= 1) break;
+          const p = smallestPrimeFactor(rowGcd);
+          rightFactors.push(p);
+          curr = curr.map(v => v / p);
+          tableRows.push([...curr]);
+        }
+
+        const steps = [];
+
+        // Krok 0: Start
+        steps.push({
+          stage: 'start',
+          stageLabel: 'Start',
+          title: 'Wspólna tabela — zapisujemy wszystkie liczby razem',
+          explanationHtml: `Zapisujemy liczby <span class="chip chip-blue">${numsLabel}</span> obok siebie przed pionową kreską. W metodzie wspólnej tabeli dla NWD dzielimy <strong>wszystkie liczby naraz wyłącznie przez wspólny dzielnik pierwszy</strong>.`,
+          tableRows,
+          rightFactors,
+          visibleRowsCount: 1,
+          activeRowIdx: null,
+          showStopBadge: false,
+          highlightAllFactors: false,
+          showMulStrip: false,
+          mulStepIdx: -1,
+          runningProduct: null
+        });
+
+        // Kroki dzielenia przez kolejne wspólne dzielniki pierwsze
+        for (let i = 0; i < rightFactors.length; i++) {
+          const p = rightFactors[i];
+          const prevVals = tableRows[i];
+          const nextVals = tableRows[i + 1];
+
+          const divDesc = prevVals
+            .map((v, idx) => `<span class="chip chip-amber">${formatInt(v)} : ${formatInt(p)} = ${formatInt(nextVals[idx])}</span>`)
+            .join(', ');
+
+          steps.push({
+            stage: 'factor',
+            stageLabel: 'Wspólny dzielnik',
+            title: `Dzielimy wszystkie liczby przez ${formatInt(p)}`,
+            divHintData: { n: prevVals[0], p },
+            baseExplain: `Wszystkie liczby w wierszu dzielą się przez <span class="chip chip-green">${formatInt(p)}</span>! Wykonujemy dzielenia: ${divDesc}.`,
+            tableRows,
+            rightFactors,
+            visibleRowsCount: i + 2,
+            activeRowIdx: i,
+            showStopBadge: false,
+            highlightAllFactors: false,
+            showMulStrip: false,
+            mulStepIdx: -1,
+            runningProduct: null
+          });
+        }
+
+        // Krok zatrzymania: brak wspólnego dzielnika
+        const lastRowVals = tableRows[tableRows.length - 1];
+        const lastRowStr = lastRowVals.map(formatInt).join(', ');
+
+        if (rightFactors.length === 0) {
+          steps.push({
+            stage: 'done',
+            stageLabel: 'Wynik',
+            title: 'Brak wspólnego dzielnika — NWD = 1!',
+            explanationHtml: `Dla liczb <span class="chip chip-blue">${lastRowStr}</span> nie istnieje żadna liczba pierwsza, która dzieliłaby je wszystkie jednocześnie. Zatrzymujemy tabelę! Liczby są względnie pierwsze, więc <span class="chip chip-green">NWD(${numsLabel}) = 1</span>.`,
+            tableRows,
+            rightFactors,
+            visibleRowsCount: tableRows.length,
+            activeRowIdx: null,
+            showStopBadge: true,
+            highlightAllFactors: false,
+            showMulStrip: true,
+            mulStepIdx: 0,
+            runningProduct: 1n
+          });
+        } else {
+          steps.push({
+            stage: 'stop',
+            stageLabel: 'Zatrzymanie',
+            title: 'Brak kolejnego wspólnego dzielnika — koniec dzielenia!',
+            explanationHtml: `Otrzymane liczby (<span class="chip chip-num">${lastRowStr}</span>) nie mają już żadnego wspólnego dzielnika pierwszego. <strong>Zatrzymujemy dzielenie!</strong> Aby uzyskać NWD, mnożymy liczby z prawej kolumny.`,
+            tableRows,
+            rightFactors,
+            visibleRowsCount: tableRows.length,
+            activeRowIdx: null,
+            showStopBadge: true,
+            highlightAllFactors: true,
+            showMulStrip: false,
+            mulStepIdx: -1,
+            runningProduct: null
+          });
+
+          if (rightFactors.length === 1) {
+            steps.push({
+              stage: 'done',
+              stageLabel: 'Wynik',
+              title: `Gotowe! NWD(${numsLabel}) = ${formatInt(nwd)}`,
+              explanationHtml: `Po prawej stronie kreski mamy tylko jeden wspólny czynnik (<span class="chip chip-green">${formatInt(rightFactors[0])}</span>), więc <span class="chip chip-green">NWD(${numsLabel}) = ${formatInt(nwd)}</span>.`,
+              tableRows,
+              rightFactors,
+              visibleRowsCount: tableRows.length,
+              activeRowIdx: null,
+              showStopBadge: true,
+              highlightAllFactors: true,
+              showMulStrip: true,
+              mulStepIdx: 0,
+              runningProduct: nwd
+            });
+          } else {
+            let running = BigInt(rightFactors[0]);
+            for (let i = 1; i < rightFactors.length; i++) {
+              const prev = running;
+              const f = BigInt(rightFactors[i]);
+              running = prev * f;
+              const isLast = i === rightFactors.length - 1;
+
+              steps.push({
+                stage: isLast ? 'done' : 'multiply',
+                stageLabel: isLast ? 'Wynik' : 'Obliczanie NWD',
+                title: isLast
+                  ? `Gotowe! NWD(${numsLabel}) = ${formatInt(nwd)}`
+                  : `Mnożenie prawej kolumny (${i} z ${rightFactors.length - 1})`,
+                explanationHtml: isLast
+                  ? `Ostatnie mnożenie: <span class="chip chip-purple">${formatInt(prev)} · ${formatInt(f)} = ${formatInt(running)}</span>. Zatem <span class="chip chip-green">NWD(${numsLabel}) = ${formatInt(nwd)}</span>.`
+                  : `Mnożymy kolejne liczby z prawej kolumny: <span class="chip chip-purple">${formatInt(prev)} · ${formatInt(f)} = ${formatInt(running)}</span>.`,
+                tableRows,
+                rightFactors,
+                visibleRowsCount: tableRows.length,
+                activeRowIdx: null,
+                showStopBadge: true,
+                highlightAllFactors: isLast,
+                showMulStrip: true,
+                mulStepIdx: i,
+                runningProduct: running
+              });
+            }
+          }
+        }
+
+        return steps;
+      }
+
+      // ---------------------------------------------------------
+      // ZAKŁADKA 3: WYPISYWANIE DZIELNIKÓW
+      // ---------------------------------------------------------
+      function buildDivisorsSteps(nums, nwdNum) {
+        const divSets = nums.map(n => getAllDivisors(n));
+        const commonDivisors = divSets[0].filter(d => divSets.every(set => set.includes(d)));
+        const commonSet = new Set(commonDivisors);
+        const numsLabel = nums.map(formatInt).join(', ');
+
+        const steps = [];
+
+        // Krok 0: Start
+        steps.push({
+          stage: 'start',
+          stageLabel: 'Start',
+          title: 'Metoda wypisywania dzielników',
+          explanationHtml: `Wypiszemy wszystkie dzielniki naturalne każdej z liczb (<span class="chip chip-blue">${numsLabel}</span>), następnie znajdziemy <strong>dzielniki wspólne</strong>, a na końcu wybierzemy spośród nich <strong>największy</strong> (czyli NWD).`,
+          divSets,
+          commonDivisors,
+          commonSet,
+          revealedSetsCount: 0,
+          activeSetIdx: null,
+          highlightCommon: false,
+          highlightGcd: false,
+          nwdNum
+        });
+
+        // Odkrywanie zbiorów dzielników kolejnych liczb
+        nums.forEach((num, idx) => {
+          const count = divSets[idx].length;
+          steps.push({
+            stage: 'divisors',
+            stageLabel: 'Dzielniki',
+            title: `Wypisujemy dzielniki liczby ${formatInt(num)}`,
+            explanationHtml: `Liczba <span class="chip chip-blue">${formatInt(num)}</span> ma <strong>${count}</strong> ${count === 1 ? 'dzielnik naturalny' : (count <= 4 ? 'dzielniki naturalne' : 'dzielników naturalnych')}: wypisujemy wszystkie liczby, przez które <span class="chip chip-blue">${formatInt(num)}</span> dzieli się bez reszty.`,
+            divSets,
+            commonDivisors,
+            commonSet,
+            revealedSetsCount: idx + 1,
+            activeSetIdx: idx,
+            highlightCommon: false,
+            highlightGcd: false,
+            nwdNum
+          });
+        });
+
+        // Krok: Podświetlenie wszystkich wspólnych dzielników
+        const commonListStr = commonDivisors.map(formatInt).join(', ');
+        steps.push({
+          stage: 'common',
+          stageLabel: 'Wspólne dzielniki',
+          title: 'Zaznaczamy wszystkie wspólne dzielniki',
+          explanationHtml: `Szukamy liczb, które powtarzają się we <strong>wszystkich</strong> zbiorach dzielników. Wspólne dzielniki to: <span class="chip chip-amber">{ ${commonListStr} }</span>.`,
+          divSets,
+          commonDivisors,
+          commonSet,
+          revealedSetsCount: nums.length,
+          activeSetIdx: null,
+          highlightCommon: true,
+          highlightGcd: false,
+          nwdNum
+        });
+
+        // Krok końcowy: Wyróżnienie największego wspólnego dzielnika (NWD)
+        steps.push({
+          stage: 'done',
+          stageLabel: 'Wynik',
+          title: `Największy ze wspólnych dzielników to ${formatInt(nwdNum)}!`,
+          explanationHtml: `Spośród wszystkich wspólnych dzielników (<span class="chip chip-amber">${commonListStr}</span>) wybieramy <strong>największą liczbę</strong>. Jest nią <span class="chip chip-green">${formatInt(nwdNum)}</span>! Zatem <span class="chip chip-green">NWD(${numsLabel}) = ${formatInt(nwdNum)}</span>.`,
+          divSets,
+          commonDivisors,
+          commonSet,
+          revealedSetsCount: nums.length,
+          activeSetIdx: null,
+          highlightCommon: true,
+          highlightGcd: true,
+          nwdNum
+        });
+
+        return steps;
+      }
+
+      // ---------------------------------------------------------
+      // ZAKŁADKA 4: ALGORYTM EUKLIDESA
+      // ---------------------------------------------------------
+      function computeEuclidStage(numA, numB) {
+        const rows = [];
+        let a = Math.max(numA, numB);
+        let b = Math.min(numA, numB);
+        const swapped = numA < numB;
+
+        while (b > 0) {
+          const q = Math.floor(a / b);
+          const r = a % b;
+          rows.push({ a, b, q, r });
+          if (r === 0) break;
+          a = b;
+          b = r;
+        }
+
+        const result = rows.length > 0 ? rows[rows.length - 1].b : numA;
+        return { origA: numA, origB: numB, swapped, rows, result };
+      }
+
+      function buildEuclidSteps(nums, nwdNum) {
+        const numsLabel = nums.map(formatInt).join(', ');
+        const stages = [];
+
+        if (nums.length === 2) {
+          stages.push({
+            label: `NWD(${formatInt(nums[0])}, ${formatInt(nums[1])})`,
+            ...computeEuclidStage(nums[0], nums[1])
+          });
+        } else {
+          const s1 = computeEuclidStage(nums[0], nums[1]);
+          stages.push({
+            label: `Etap 1: NWD(${formatInt(nums[0])}, ${formatInt(nums[1])})`,
+            ...s1
+          });
+          const s2 = computeEuclidStage(s1.result, nums[2]);
+          stages.push({
+            label: `Etap 2: NWD(${formatInt(s1.result)}, ${formatInt(nums[2])})`,
+            ...s2
+          });
+        }
+
+        const steps = [];
+
+        // Krok 0: Start
+        steps.push({
+          stage: 'start',
+          stageLabel: 'Start',
+          title: 'Algorytm Euklidesa (dzielenie z resztą)',
+          explanationHtml: nums.length === 2
+            ? `W algorytmie Euklidesa dzielimy z resztą większą liczbę przez mniejszą, a w kolejnym kroku <strong>poprzedni dzielnik staje się nową dzielną</strong>, a <strong>reszta nowym dzielnikiem</strong> — aż reszta wyniesie <strong>0</strong>.`
+            : `Dla 3 liczb (<span class="chip chip-blue">${numsLabel}</span>) algorytm Euklidesa wykonujemy w <strong>dwóch etapach</strong>: najpierw obliczymy <span class="chip chip-blue">NWD(${formatInt(nums[0])}, ${formatInt(nums[1])}) = d</span>, a potem <span class="chip chip-green">NWD(d, ${formatInt(nums[2])})</span>.`,
+          stages,
+          visibleCounts: stages.map(() => 0),
+          activeStageIdx: null,
+          activeRowIdx: null,
+          highlightFinalGcd: false,
+          nwdNum
+        });
+
+        const visibleCounts = stages.map(() => 0);
+
+        stages.forEach((st, sIdx) => {
+          st.rows.forEach((row, rIdx) => {
+            visibleCounts[sIdx] = rIdx + 1;
+            const isZeroRem = row.r === 0;
+            const isLastStage = sIdx === stages.length - 1;
+
+            let expHtml = '';
+            if (rIdx === 0 && st.swapped) {
+              expHtml += `Zaczynamy od podzielenia większej liczby przez mniejszą. `;
+            } else if (rIdx > 0) {
+              expHtml += `Przenosimy poprzedni dzielnik (<span class="chip chip-blue">${formatInt(row.a)}</span>) na początek, a resztę (<span class="chip chip-teal">${formatInt(row.b)}</span>) na miejsce dzielnika. `;
+            }
+
+            expHtml += `Dzielimy: <span class="chip chip-blue">${formatInt(row.a)}</span> : <span class="chip chip-teal">${formatInt(row.b)}</span> = <strong>${formatInt(row.q)}</strong>, reszta <span class="chip ${isZeroRem ? 'chip-num' : 'chip-purple'}">${formatInt(row.r)}</span>. `;
+
+            if (isZeroRem) {
+              if (!isLastStage) {
+                expHtml += `Reszta wynosi <strong>0</strong>! Zatem wynik Etapu 1 to dzielnik z tego kroku: <span class="chip chip-green">${formatInt(st.result)}</span>. Przechodzimy do Etapu 2 z trzecią liczbą!`;
+              } else {
+                expHtml += `Reszta wynosi <strong>0</strong> — to koniec algorytmu! Dzielnik z tego kroku (czyli ostatnia niezerowa reszta) to nasz wynik: <span class="chip chip-green">NWD(${numsLabel}) = ${formatInt(nwdNum)}</span>.`;
+              }
+            } else {
+              expHtml += `Ponieważ reszta (${formatInt(row.r)}) jest większa od zera, dzielimy dalej.`;
+            }
+
+            const isVeryFinalStep = isZeroRem && isLastStage;
+
+            steps.push({
+              stage: isVeryFinalStep ? 'done' : 'euclid',
+              stageLabel: isVeryFinalStep ? 'Wynik' : (stages.length > 1 ? `Etap ${sIdx + 1}` : 'Dzielenie z resztą'),
+              title: isVeryFinalStep
+                ? `Reszta 0! NWD(${numsLabel}) = ${formatInt(nwdNum)}`
+                : `${stages.length > 1 ? `Etap ${sIdx + 1}, krok ${rIdx + 1}` : `Dzielenie nr ${rIdx + 1}`}: ${formatInt(row.a)} : ${formatInt(row.b)}`,
+              explanationHtml: expHtml,
+              stages,
+              visibleCounts: [...visibleCounts],
+              activeStageIdx: sIdx,
+              activeRowIdx: rIdx,
+              highlightFinalGcd: isVeryFinalStep,
+              nwdNum
+            });
+          });
+        });
+
+        return steps;
+      }
+
+      // =========================================================
+      // POBIERANIE AKTYWNEJ LISTY KROKÓW
+      // =========================================================
+
+      function getActiveSteps() {
+        if (!state.model) return [];
+        if (state.activeTab === 'separate') return state.model.separateSteps;
+        if (state.activeTab === 'table') return state.model.tableSteps;
+        if (state.activeTab === 'divisors') return state.model.divisorsSteps;
+        return state.model.euclidSteps;
+      }
+
+      // =========================================================
+      // RENDEROWANIE WIZUALIZACJI DLA KAŻDEJ ZAKŁADKI
+      // =========================================================
+
+      function buildMultiplicationStrip(nums, factors, mulStepIdx, runningProduct, isDone) {
+        const strip = document.createElement('div');
+        strip.className = 'mul-strip' + (isDone ? ' is-done' : '');
+
+        const label = document.createElement('div');
+        label.className = 'mul-strip-label';
+        label.textContent = isDone ? '✓ Obliczony Największy Wspólny Dzielnik' : 'Mnożenie wspólnych czynników pierwszych';
+        strip.appendChild(label);
+
+        const eqLine = document.createElement('div');
+        eqLine.className = 'mul-eq-line';
+
+        const prefix = document.createElement('span');
+        prefix.textContent = `NWD(${nums.map(formatInt).join(', ')}) =`;
+        eqLine.appendChild(prefix);
+
+        if (factors.length === 0) {
+          const res = document.createElement('span');
+          res.className = 'mul-running';
+          res.textContent = '1';
+          eqLine.appendChild(res);
+        } else {
+          factors.forEach((p, idx) => {
+            if (idx > 0) {
+              const dot = document.createElement('span');
+              dot.className = 'dot-op';
+              dot.textContent = '·';
+              eqLine.appendChild(dot);
+            }
+            const chip = document.createElement('span');
+            chip.className = 'mul-chip';
+            if (idx === mulStepIdx && !isDone) {
+              chip.classList.add('is-current');
+            } else if (idx <= mulStepIdx) {
+              chip.classList.add('is-used');
+            }
+            chip.textContent = formatInt(p);
+            eqLine.appendChild(chip);
+          });
+
+          if (runningProduct !== null) {
+            const eqSign = document.createElement('span');
+            eqSign.textContent = isDone ? '=' : '→ dotąd:';
+            eqSign.style.cssText = 'color: #64748b; font-size: 0.92rem; margin: 0 2px;';
+            eqLine.appendChild(eqSign);
+
+            const resSpan = document.createElement('span');
+            resSpan.className = 'mul-running';
+            resSpan.textContent = formatInt(runningProduct);
+            eqLine.appendChild(resSpan);
+          }
+        }
+
+        strip.appendChild(eqLine);
+        return strip;
+      }
+
+      function renderSeparateTab(model, step) {
+        const { nums, factorizations, factorsPerNum, gcdFactors } = model;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sep-wrapper';
+
+        // 1. Pionowe tabelki rozkładu
+        const tablesRow = document.createElement('div');
+        tablesRow.className = 'sep-tables-row';
+
+        nums.forEach((num, cardIdx) => {
+          const divs = factorizations[cardIdx];
+          const doneCount = step.completedPerCard[cardIdx];
+          const isCardActive = step.activeCardIdx === cardIdx;
+
+          const card = document.createElement('div');
+          card.className = 'mini-factor-card' + (isCardActive ? ' is-active-card' : '');
+
+          const head = document.createElement('div');
+          head.className = 'mini-card-head';
+          head.textContent = `Liczba ${formatInt(num)}`;
+          card.appendChild(head);
+
+          const grid = document.createElement('div');
+          grid.className = 'mini-bar-grid';
+
+          if (divs.length === 0) {
+            const lCell = document.createElement('div');
+            lCell.className = 'mb-left is-one';
+            lCell.innerHTML = '<span>1</span>';
+            const sep = document.createElement('div');
+            sep.className = 'mb-line';
+            const rCell = document.createElement('div');
+            rCell.className = 'mb-right';
+            rCell.innerHTML = '<span class="mb-dash">—</span>';
+            grid.append(lCell, sep, rCell);
+          } else {
+            for (let i = 0; i <= doneCount; i++) {
+              const leftVal = i === 0 ? num : divs[i - 1].quotient;
+              const isOne = i === divs.length && leftVal === 1;
+              const isActiveRow = isCardActive && step.activeDivIdx === i;
+
+              const lCell = document.createElement('div');
+              lCell.className = 'mb-left';
+              if (isActiveRow) lCell.classList.add('is-active');
+              if (isOne) {
+                lCell.classList.add('is-one');
+                lCell.innerHTML = '<span>1</span>';
+              } else {
+                lCell.textContent = formatInt(leftVal);
+              }
+
+              const sep = document.createElement('div');
+              sep.className = 'mb-line';
+
+              const rCell = document.createElement('div');
+              rCell.className = 'mb-right';
+              if (i < doneCount) {
+                const badge = document.createElement('span');
+                badge.className = 'mb-factor' + (isActiveRow ? ' is-active' : '');
+                badge.textContent = formatInt(divs[i].factor);
+                rCell.appendChild(badge);
+              }
+
+              grid.append(lCell, sep, rCell);
+            }
+          }
+
+          card.appendChild(grid);
+
+          if (isCardActive && step.activeDivIdx !== null && step.activeDivIdx >= 0) {
+            const d = divs[step.activeDivIdx];
+            const bubbleWrap = document.createElement('div');
+            bubbleWrap.className = 'mini-div-bubble';
+            bubbleWrap.innerHTML = `<span class="div-pill">${formatInt(d.dividend)} : ${formatInt(d.factor)} = ${formatInt(d.quotient)}</span>`;
+            card.appendChild(bubbleWrap);
+          }
+
+          tablesRow.appendChild(card);
+        });
+
+        wrapper.appendChild(tablesRow);
+
+        // 2. Poziome kafelki parowania
+        if (step.showSelectBox) {
+          const selectBox = document.createElement('div');
+          selectBox.className = 'select-box';
+          selectBox.innerHTML = '<div class="select-box-title">Parowanie wspólnych czynników pierwszych</div>';
+
+          const horizRows = document.createElement('div');
+          horizRows.className = 'horiz-rows';
+
+          nums.forEach((num, numIdx) => {
+            const row = document.createElement('div');
+            row.className = 'horiz-row';
+
+            const label = document.createElement('span');
+            label.className = 'horiz-num';
+            label.textContent = `${formatInt(num)} =`;
+            row.appendChild(label);
+
+            const arr = factorsPerNum[numIdx];
+            if (arr.length === 0) {
+              const note = document.createElement('span');
+              note.style.cssText = 'font-family: var(--font-sans); font-size: 0.86rem; color: #64748b; font-style: italic;';
+              note.textContent = '(brak czynników pierwszych)';
+              row.appendChild(note);
+            } else {
+              arr.forEach((p, fIdx) => {
+                if (fIdx > 0) {
+                  const dot = document.createElement('span');
+                  dot.className = 'dot-op';
+                  dot.textContent = '·';
+                  row.appendChild(dot);
+                }
+
+                const tile = document.createElement('span');
+                tile.className = 'ftile';
+                tile.textContent = formatInt(p);
+
+                const pairNum = step.pairMatrix[numIdx][fIdx];
+                if (pairNum !== null && pairNum <= step.revealedPairsCount) {
+                  tile.classList.add(pairNum === step.activePairNum ? 'is-paired-now' : 'is-paired');
+                  const tag = document.createElement('span');
+                  tag.className = 'pair-tag';
+                  tag.textContent = String(pairNum);
+                  tag.title = `Wspólna grupa #${pairNum}`;
+                  tile.appendChild(tag);
+                } else if (step.markUnmatched && pairNum === null) {
+                  tile.classList.add(step.stage === 'select' ? 'is-unmatched-now' : 'is-unmatched');
+                }
+
+                row.appendChild(tile);
+              });
+            }
+
+            horizRows.appendChild(row);
+          });
+
+          selectBox.appendChild(horizRows);
+          wrapper.appendChild(selectBox);
+        }
+
+        // 3. Pasek mnożenia NWD
+        if (step.showMulStrip) {
+          wrapper.appendChild(buildMultiplicationStrip(nums, gcdFactors, step.mulStepIdx, step.runningProduct, step.stage === 'done'));
+        }
+
+        elVizContainer.innerHTML = '';
+        elVizContainer.appendChild(wrapper);
+      }
+
+      function renderSharedTableTab(model, step) {
+        const { nums } = model;
+        const { tableRows, rightFactors, visibleRowsCount, activeRowIdx, showStopBadge, highlightAllFactors } = step;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'shared-wrapper';
+
+        const card = document.createElement('div');
+        card.className = 'shared-table-card';
+
+        const grid = document.createElement('div');
+        grid.className = 'shared-grid';
+        grid.style.gridTemplateColumns = `repeat(${nums.length}, minmax(68px, auto)) auto minmax(64px, auto)`;
+
+        for (let r = 0; r < visibleRowsCount; r++) {
+          const vals = tableRows[r];
+          const isThisActive = activeRowIdx === r;
+          const isJustCreated = activeRowIdx !== null && r === activeRowIdx + 1;
+          const isFinalCoprimeRow = showStopBadge && r === tableRows.length - 1;
+
+          vals.forEach((val) => {
+            const cell = document.createElement('div');
+            cell.className = 'sg-cell';
+            if (isThisActive) cell.classList.add('is-active-div');
+            if (isFinalCoprimeRow) cell.classList.add('is-final-coprime');
+            if (isJustCreated) cell.classList.add('is-new-val');
+            cell.textContent = formatInt(val);
+            grid.appendChild(cell);
+          });
+
+          const sep = document.createElement('div');
+          sep.className = 'sg-sep';
+          grid.appendChild(sep);
+
+          const fCell = document.createElement('div');
+          fCell.className = 'sg-factor-cell';
+          if (r < visibleRowsCount - 1 && r < rightFactors.length) {
+            const badge = document.createElement('span');
+            badge.className = 'sg-factor-badge';
+            if (isThisActive) {
+              badge.classList.add('is-active');
+            } else if (step.showMulStrip && step.mulStepIdx === r && step.stage !== 'done') {
+              badge.classList.add('is-mul-highlight');
+            } else if (highlightAllFactors) {
+              badge.classList.add('is-all-highlight');
+            }
+            badge.textContent = formatInt(rightFactors[r]);
+            fCell.appendChild(badge);
+          }
+          grid.appendChild(fCell);
+        }
+
+        card.appendChild(grid);
+        wrapper.appendChild(card);
+
+        if (showStopBadge) {
+          const stopPill = document.createElement('div');
+          stopPill.className = 'stop-pill';
+          stopPill.textContent = '✋ Brak wspólnego dzielnika — koniec!';
+          wrapper.appendChild(stopPill);
+        }
+
+        if (step.showMulStrip) {
+          wrapper.appendChild(buildMultiplicationStrip(nums, rightFactors, step.mulStepIdx, step.runningProduct, step.stage === 'done'));
+        }
+
+        elVizContainer.innerHTML = '';
+        elVizContainer.appendChild(wrapper);
+      }
+
+      function renderDivisorsTab(model, step) {
+        const { nums } = model;
+        const { divSets, commonDivisors, commonSet, revealedSetsCount, activeSetIdx, highlightCommon, highlightGcd, nwdNum } = step;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'div-wrapper';
+
+        nums.forEach((num, idx) => {
+          const isRevealed = idx < revealedSetsCount;
+          const isActive = activeSetIdx === idx;
+
+          const card = document.createElement('div');
+          card.className = 'div-set-card';
+          if (highlightGcd) card.classList.add('is-done-set');
+          else if (isActive) card.classList.add('is-active-set');
+
+          const head = document.createElement('div');
+          head.className = 'div-set-head';
+          const countTxt = isRevealed ? `${divSets[idx].length} ${divSets[idx].length === 1 ? 'dzielnik' : (divSets[idx].length <= 4 ? 'dzielniki' : 'dzielników')}` : 'oczekuje...';
+          head.innerHTML = `<span>D<sub>${formatInt(num)}</sub></span><span class="div-set-count">${countTxt}</span>`;
+          card.appendChild(head);
+
+          const pillsWrap = document.createElement('div');
+          pillsWrap.className = 'div-pills';
+
+          if (!isRevealed) {
+            pillsWrap.innerHTML = '<span style="font-size: 0.85rem; color: #94a3b8; font-style: italic;">Kliknij „Następny krok”, aby wypisać dzielniki...</span>';
+          } else {
+            const openBrace = document.createElement('span');
+            openBrace.className = 'brace';
+            openBrace.textContent = '{';
+            pillsWrap.appendChild(openBrace);
+
+            divSets[idx].forEach((d) => {
+              const pill = document.createElement('span');
+              pill.className = 'dpill';
+              pill.textContent = formatInt(d);
+
+              if (highlightGcd && d === nwdNum) {
+                pill.classList.add('is-gcd');
+                pill.title = 'Największy Wspólny Dzielnik (NWD)';
+              } else if (highlightCommon) {
+                if (commonSet.has(d)) {
+                  pill.classList.add('is-common');
+                  pill.title = 'Wspólny dzielnik';
+                } else {
+                  pill.classList.add('is-dimmed');
+                }
+              } else if (isActive) {
+                pill.classList.add('is-revealed-now');
+              }
+
+              pillsWrap.appendChild(pill);
+            });
+
+            const closeBrace = document.createElement('span');
+            closeBrace.className = 'brace';
+            closeBrace.textContent = '}';
+            pillsWrap.appendChild(closeBrace);
+          }
+
+          card.appendChild(pillsWrap);
+          wrapper.appendChild(card);
+        });
+
+        // Pasek podsumowujący wspólne dzielniki
+        if (highlightCommon) {
+          const bar = document.createElement('div');
+          bar.className = 'common-summary-bar' + (highlightGcd ? ' is-done' : '');
+
+          const title = document.createElement('div');
+          title.className = 'common-summary-title';
+          title.textContent = highlightGcd
+            ? `✓ Największy wspólny dzielnik: NWD(${nums.map(formatInt).join(', ')}) = ${formatInt(nwdNum)}`
+            : 'Wspólne dzielniki wszystkich liczb:';
+          bar.appendChild(title);
+
+          const pills = document.createElement('div');
+          pills.className = 'div-pills';
+          commonDivisors.forEach((d) => {
+            const pill = document.createElement('span');
+            pill.className = 'dpill ' + (highlightGcd && d === nwdNum ? 'is-gcd' : 'is-common');
+            pill.textContent = formatInt(d);
+            pills.appendChild(pill);
+          });
+          bar.appendChild(pills);
+          wrapper.appendChild(bar);
+        }
+
+        elVizContainer.innerHTML = '';
+        elVizContainer.appendChild(wrapper);
+      }
+
+      function renderEuclidTab(model, step) {
+        const { stages, visibleCounts, activeStageIdx, activeRowIdx, highlightFinalGcd } = step;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'euclid-wrapper';
+
+        // Legenda kolorów dla Euklidesa
+        const legend = document.createElement('div');
+        legend.className = 'euclid-legend';
+        legend.innerHTML = `
+          <span><i class="e-dot" style="background: var(--blue-bg); border: 1.5px solid var(--blue-border);"></i> Dzielna</span>
+          <span><i class="e-dot" style="background: var(--teal-bg); border: 1.5px solid var(--teal-border);"></i> Dzielnik → nowa dzielna</span>
+          <span><i class="e-dot" style="background: var(--purple-bg); border: 1.5px solid var(--purple-border);"></i> Reszta → nowy dzielnik</span>
+          <span><i class="e-dot" style="background: var(--green);"></i> NWD</span>
+        `;
+        wrapper.appendChild(legend);
+
+        stages.forEach((st, sIdx) => {
+          const vis = visibleCounts[sIdx];
+          if (vis === 0 && sIdx > 0) return;
+
+          const header = document.createElement('div');
+          header.className = 'euclid-stage-header';
+          header.textContent = st.label + (vis === st.rows.length ? ` = ${formatInt(st.result)}` : '');
+          wrapper.appendChild(header);
+
+          if (vis === 0) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'euclid-row';
+            placeholder.innerHTML = `<span style="color: #64748b; font-size: 0.9rem; font-style: italic;">Kliknij „Następny krok”, aby wykonać pierwsze dzielenie z resztą...</span>`;
+            wrapper.appendChild(placeholder);
+            return;
+          }
+
+          for (let rIdx = 0; rIdx < vis; rIdx++) {
+            const row = st.rows[rIdx];
+            const isActive = activeStageIdx === sIdx && activeRowIdx === rIdx;
+            const isZeroRem = row.r === 0;
+            const isFinalWinner = isZeroRem && (sIdx === stages.length - 1 ? highlightFinalGcd : true);
+
+            if (rIdx > 0) {
+              const arrow = document.createElement('div');
+              arrow.className = 'euclid-arrow-note';
+              arrow.innerHTML = `<span>↘ dzielnik (${formatInt(row.a)}) na początek, reszta (${formatInt(row.b)}) na dzielnik</span>`;
+              wrapper.appendChild(arrow);
+            }
+
+            const rowEl = document.createElement('div');
+            rowEl.className = 'euclid-row';
+            if (isZeroRem) rowEl.classList.add('is-zero-rem');
+            else if (isActive) rowEl.classList.add('is-active');
+
+            const bClass = isFinalWinner ? 'etok etok-gcd' : 'etok etok-b';
+            const rClass = isZeroRem ? 'etok etok-r-zero' : 'etok etok-r';
+
+            const mainEq = document.createElement('div');
+            mainEq.className = 'euclid-main-eq';
+            mainEq.innerHTML = `
+              <span class="etok etok-a">${formatInt(row.a)}</span>
+              <span>:</span>
+              <span class="${bClass}" title="${isFinalWinner ? 'Wynik NWD' : 'Dzielnik'}">${formatInt(row.b)}</span>
+              <span>=</span>
+              <span class="etok etok-q">${formatInt(row.q)}</span>
+              <span style="font-size: 0.85rem; color: #64748b; font-family: var(--font-sans);">r.</span>
+              <span class="${rClass}">${formatInt(row.r)}</span>
+            `;
+
+            const altEq = document.createElement('div');
+            altEq.className = 'euclid-alt-eq';
+            altEq.textContent = `${formatInt(row.a)} = ${formatInt(row.q)} · ${formatInt(row.b)} + ${formatInt(row.r)}`;
+            altEq.title = 'Zapis równoważny dzielenia z resztą';
+
+            rowEl.append(mainEq, altEq);
+            wrapper.appendChild(rowEl);
+          }
+        });
+
+        elVizContainer.innerHTML = '';
+        elVizContainer.appendChild(wrapper);
+      }
+
+      // =========================================================
+      // RENDEROWANIE KARTY PODSUMOWANIA I DODATKÓW
+      // =========================================================
+
+      function renderSummarySection(model) {
+        const { nums, nwd, nww, gcdGrouped, gcdFactors } = model;
+        const numsStr = nums.map(formatInt).join(', ');
+        const isCoprime = nwd === 1n;
+
+        // 1. Główny wynik NWD
+        let mathHtml = `NWD(${numsStr}) = `;
+        if (gcdFactors.length > 1) {
+          mathHtml += `${gcdFactors.map(formatInt).join(' · ')} = `;
+          const hasAnyPower = gcdGrouped.some(g => g.exp > 1);
+          if (state.showPowers && hasAnyPower) {
+            const powStr = gcdGrouped
+              .map(g => (g.exp > 1 ? `${formatInt(g.prime)}<sup>${g.exp}</sup>` : formatInt(g.prime)))
+              .join(' · ');
+            mathHtml += `${powStr} = `;
+          }
+        }
+        mathHtml += `<span class="final-gcd-highlight">${formatInt(nwd)}</span>`;
+
+        const coprimeHtml = isCoprime
+          ? `<span class="coprime-badge">★ Liczby względnie pierwsze!</span>`
+          : '';
+
+        elFinalBanner.innerHTML = `<div class="final-formula-math">${mathHtml}</div>${coprimeHtml}`;
+
+        // 2. Zastosowanie w ułamkach (Skracanie ułamka)
+        if (nums.length === 2) {
+          const a = BigInt(nums[0]);
+          const b = BigInt(nums[1]);
+          const redA = a / nwd;
+          const redB = b / nwd;
+
+          if (isCoprime) {
+            elFracDesc.innerHTML = `Ponieważ <strong>NWD(${formatInt(a)}, ${formatInt(b)}) = 1</strong>, ułamek <strong>${formatInt(a)}/${formatInt(b)}</strong> jest już ułamkiem nieskracalnym:`;
+            let html = `
+              <span class="frac is-reduced"><span class="frac-num">${formatInt(a)}</span><span class="frac-den">${formatInt(b)}</span></span>
+            `;
+            if (a >= b) {
+              const whole = a / b;
+              const rem = a % b;
+              if (rem === 0n) {
+                html += `<span>=</span><span class="mixed-whole" style="color: var(--green-dark);">${formatInt(whole)}</span>`;
+              } else {
+                html += `<span>=</span><span class="mixed-wrap"><span class="mixed-whole">${formatInt(whole)}</span><span class="frac is-reduced"><span class="frac-num">${formatInt(rem)}</span><span class="frac-den">${formatInt(b)}</span></span></span>`;
+              }
+            }
+            html += `<span class="frac-tag is-irreducible">ułamek nieskracalny</span>`;
+            elFracReduceBox.innerHTML = html;
+          } else {
+            elFracDesc.innerHTML = `Dzieląc licznik i mianownik przez <strong>NWD = ${formatInt(nwd)}</strong>, od razu otrzymujemy ułamek nieskracalny:`;
+            let html = `
+              <span class="frac">
+                <span class="frac-num">${formatInt(a)}<span class="frac-div-op">: ${formatInt(nwd)}</span></span>
+                <span class="frac-den">${formatInt(b)}<span class="frac-div-op">: ${formatInt(nwd)}</span></span>
+              </span>
+              <span>=</span>
+              <span class="frac is-reduced">
+                <span class="frac-num">${formatInt(redA)}</span>
+                <span class="frac-den">${formatInt(redB)}</span>
+              </span>
+            `;
+            // Wyłączenie całości dla ułamka niewłaściwego
+            if (redA >= redB) {
+              const whole = redA / redB;
+              const rem = redA % redB;
+              if (rem === 0n) {
+                html += `<span>=</span><span class="mixed-whole" style="color: var(--green-dark);">${formatInt(whole)}</span>`;
+              } else {
+                html += `<span>=</span><span class="mixed-wrap"><span class="mixed-whole">${formatInt(whole)}</span><span class="frac is-reduced"><span class="frac-num">${formatInt(rem)}</span><span class="frac-den">${formatInt(redB)}</span></span></span>`;
+              }
+            }
+            html += `<span class="frac-tag">skrócono przez ${formatInt(nwd)}</span>`;
+            elFracReduceBox.innerHTML = html;
+          }
+        } else {
+          // Dla 3 liczb pokazujemy praktyczne zastosowanie NWD (równy podział na pakiety)
+          elFracDesc.innerHTML = `Dla 3 liczb (<strong>${numsStr}</strong>) NWD mówi, na ile <strong>maksymalnie jednakowych zestawów</strong> można podzielić wszystkie trzy wielkości bez reszty:`;
+          const parts = nums.map(n => `${formatInt(BigInt(n) / nwd)}`).join(', ');
+          elFracReduceBox.innerHTML = `
+            <span style="font-family: var(--font-sans); font-size: 0.9rem; font-weight: 600; color: var(--text-main); line-height: 1.5;">
+              Można utworzyć maksymalnie <strong style="color: var(--green-dark);">${formatInt(nwd)}</strong> jednakowych zestawów (po <strong>${parts}</strong> szt. z każdej grupy).<br>
+              <span style="font-size: 0.82rem; color: var(--text-muted);">Aby zobaczyć wizualizację skracania ułamka zwykłego, usuń 3. liczbę.</span>
+            </span>
+          `;
+        }
+
+        // 3. Powiązanie z NWW
+        elNwwMainVal.innerHTML = `NWW(${numsStr}) = <span style="color: var(--purple);">${formatInt(nww)}</span>`;
+
+        if (nums.length === 2) {
+          const a = BigInt(nums[0]);
+          const b = BigInt(nums[1]);
+          const prod = a * b;
+          const checkProd = nwd * nww;
+          elNwwFormulaBox.innerHTML = `
+            <div><strong>Sprawdzenie zależności między NWD i NWW:</strong></div>
+            <div class="nww-formula-math">NWW(${formatInt(a)}, ${formatInt(b)}) = (${formatInt(a)} · ${formatInt(b)}) : ${formatInt(nwd)} = ${formatInt(prod)} : ${formatInt(nwd)} = <span style="color: var(--green-dark);">${formatInt(nww)}</span> ✓</div>
+            <div class="nww-formula-math">NWD · NWW = ${formatInt(nwd)} · ${formatInt(nww)} = ${formatInt(checkProd)} = ${formatInt(a)} · ${formatInt(b)} ✓</div>
+          `;
+        } else {
+          elNwwFormulaBox.innerHTML = `
+            <div><strong>Warto wiedzieć:</strong></div>
+            <div style="margin-top: 4px; color: var(--text-muted);">
+              Zależność <strong>NWD(a, b) · NWW(a, b) = a · b</strong> działa bezpośrednio dla 2 liczb. Dla 3 liczb (${numsStr}) NWD i NWW wyznaczamy niezależnie z rozkładu na czynniki pierwsze!
+            </div>
+          `;
+        }
+      }
+
+      // =========================================================
+      // GŁÓWNA FUNKCJA RENDERUJĄCA
+      // =========================================================
+
+      function renderAll() {
+        const model = state.model;
+        if (!model) return;
+
+        const steps = getActiveSteps();
+        const maxIdx = Math.max(0, steps.length - 1);
+        if (state.currentStep > maxIdx) state.currentStep = maxIdx;
+
+        const step = steps[state.currentStep];
+
+        // 1. Odznaki, licznik i pasek postępu
+        elStageBadge.textContent = step.stageLabel;
+        elStageBadge.className = `stage-badge stage-${step.stage}`;
+        elStepCounter.textContent = `Krok ${state.currentStep} z ${maxIdx}`;
+        const pct = maxIdx > 0 ? Math.round((state.currentStep / maxIdx) * 100) : 100;
+        elProgressFill.style.width = `${pct}%`;
+
+        // 2. Wizualizacja na kartce w kratkę
+        if (state.activeTab === 'separate') {
+          renderSeparateTab(model, step);
+        } else if (state.activeTab === 'table') {
+          renderSharedTableTab(model, step);
+        } else if (state.activeTab === 'divisors') {
+          renderDivisorsTab(model, step);
+        } else {
+          renderEuclidTab(model, step);
+        }
+
+        // 3. Panel opisu słownego
+        elExplanationCard.className = `explanation-card theme-${step.stage}`;
+        elExplanationTitle.textContent = step.title;
+
+        if (step.baseExplain) {
+          let html = '';
+          if (state.showDivisibility && step.divHintData) {
+            html += divisibilityHintHtml(step.divHintData.n, step.divHintData.p) + ' ';
+          }
+          html += step.baseExplain;
+          elExplanationBody.innerHTML = html;
+        } else {
+          elExplanationBody.innerHTML = step.explanationHtml;
+        }
+
+        // 4. Przyciski sterowania
+        elBtnStart.disabled = state.currentStep === 0;
+        elBtnPrev.disabled = state.currentStep === 0;
+        elBtnNext.disabled = state.currentStep >= maxIdx;
+        elBtnEnd.disabled = state.currentStep >= maxIdx;
+        elBtnPlay.disabled = maxIdx === 0;
+        updatePlayButtonUI();
+
+        // 5. Karta podsumowania
+        renderSummarySection(model);
+      }
+
+      // =========================================================
+      // WALIDACJA WEJŚCIA I OBSŁUGA STANU
+      // =========================================================
+
+      function showError(msg, invalidEls = []) {
+        [elN1, elN2, elN3].forEach(el => el.classList.remove('is-invalid'));
+        invalidEls.forEach(el => el.classList.add('is-invalid'));
+
+        if (msg) {
+          elErrorBox.innerHTML = msg;
+          elErrorBox.classList.add('visible');
+        } else {
+          elErrorBox.innerHTML = '';
+          elErrorBox.classList.remove('visible');
+        }
+      }
+
+      function parseAndValidate() {
+        const activeInputs = state.hasThird
+          ? [
+              { el: elN1, name: 'Pierwsza liczba' },
+              { el: elN2, name: 'Druga liczba' },
+              { el: elN3, name: 'Trzecia liczba' }
+            ]
+          : [
+              { el: elN1, name: 'Pierwsza liczba' },
+              { el: elN2, name: 'Druga liczba' }
+            ];
+
+        const parsedNums = [];
+
+        for (const item of activeInputs) {
+          const raw = item.el.value.trim().replace(/\s+/g, '');
+          if (raw === '') {
+            showError(`Pole <strong>„${item.name}”</strong> jest puste. Wpisz liczbę naturalną od 1 do 10 000.`, [item.el]);
+            return null;
+          }
+          if (raw.includes(',') || raw.includes('.')) {
+            showError(`Pole <strong>„${item.name}”</strong> zawiera ułamek. NWD wyznaczamy wyłącznie dla <strong>liczb naturalnych</strong> (całkowitych dodatnich).`, [item.el]);
+            return null;
+          }
+          if (/^-/.test(raw) || raw === '0') {
+            showError(`Pole <strong>„${item.name}”</strong> musi zawierać liczbę większą od zera (od <strong>1</strong> do <strong>10 000</strong>).`, [item.el]);
+            return null;
+          }
+          if (!/^\d+$/.test(raw)) {
+            showError(`Nieprawidłowy zapis w polu <strong>„${item.name}”</strong>. Wpisz wyłącznie cyfry.`, [item.el]);
+            return null;
+          }
+
+          const val = Number(raw);
+          if (!Number.isSafeInteger(val) || val < 1 || val > 10000) {
+            showError(`Liczba w polu <strong>„${item.name}”</strong> musi mieścić się w zakresie od <strong>1</strong> do <strong>10 000</strong>.`, [item.el]);
+            return null;
+          }
+          parsedNums.push(val);
+        }
+
+        showError('');
+        return parsedNums;
+      }
+
+      function handleCalculate() {
+        stopAutoPlay();
+        const nums = parseAndValidate();
+        if (!nums) return;
+
+        state.model = buildModel(nums);
+        state.currentStep = 0;
+        renderAll();
+      }
+
+      function setThirdField(visible, presetValue = null) {
+        state.hasThird = visible;
+        elGroupN3.style.display = visible ? 'flex' : 'none';
+        elBtnToggleThird.classList.toggle('is-remove', visible);
+        elBtnToggleThird.textContent = visible ? '× Usuń 3. liczbę' : '+ Dodaj 3. liczbę';
+
+        if (visible) {
+          if (presetValue !== null) {
+            elN3.value = String(presetValue);
+          } else if (elN3.value.trim() === '') {
+            elN3.value = '30';
+          }
+        }
+      }
+
+      function setActiveTab(tabName) {
+        stopAutoPlay();
+        state.activeTab = tabName;
+        state.currentStep = 0;
+
+        const tabs = [
+          { el: elTabSeparate, id: 'separate' },
+          { el: elTabTable, id: 'table' },
+          { el: elTabDivisors, id: 'divisors' },
+          { el: elTabEuclid, id: 'euclid' }
+        ];
+        tabs.forEach(({ el, id }) => {
+          const active = id === tabName;
+          el.classList.toggle('is-active', active);
+          el.setAttribute('aria-selected', String(active));
+        });
+
+        renderAll();
+      }
+
+      // =========================================================
+      // STEROWANIE ODTWARZANIEM
+      // =========================================================
+
+      function stopAutoPlay() {
+        if (state.playTimer !== null) {
+          clearInterval(state.playTimer);
+          state.playTimer = null;
+        }
+        state.isPlaying = false;
+        updatePlayButtonUI();
+      }
+
+      function updatePlayButtonUI() {
+        if (state.isPlaying) {
+          elBtnPlay.textContent = '⏸ Pauza';
+          elBtnPlay.classList.add('is-playing');
+        } else {
+          elBtnPlay.textContent = '▶ Start';
+          elBtnPlay.classList.remove('is-playing');
+        }
+      }
+
+      function advanceOneStep() {
+        const steps = getActiveSteps();
+        const maxIdx = Math.max(0, steps.length - 1);
+        if (state.currentStep < maxIdx) {
+          state.currentStep++;
+          renderAll();
+          if (state.currentStep >= maxIdx) {
+            stopAutoPlay();
+          }
+        } else {
+          stopAutoPlay();
+        }
+      }
+
+      function toggleAutoPlay() {
+        const steps = getActiveSteps();
+        if (steps.length <= 1) return;
+
+        if (state.isPlaying) {
+          stopAutoPlay();
+          return;
+        }
+
+        if (state.currentStep >= steps.length - 1) {
+          state.currentStep = 0;
+          renderAll();
+        }
+
+        state.isPlaying = true;
+        updatePlayButtonUI();
+        advanceOneStep();
+
+        if (state.isPlaying) {
+          state.playTimer = setInterval(advanceOneStep, SPEED_MAP[state.speedLevel].ms);
+        }
+      }
+
+      // =========================================================
+      // ZDARZENIA (EVENT LISTENERS)
+      // =========================================================
+
+      elBtnToggleThird.addEventListener('click', () => {
+        setThirdField(!state.hasThird);
+        handleCalculate();
+      });
+
+      elBtnCalc.addEventListener('click', handleCalculate);
+
+      elBtnRandom.addEventListener('click', () => {
+        const pool = state.hasThird ? RANDOM_SETS_3 : RANDOM_SETS_2;
+        const currentKey = state.model ? state.model.nums.join(',') : '';
+        let pick = pool[Math.floor(Math.random() * pool.length)];
+        if (pick.join(',') === currentKey) {
+          pick = pool[(pool.indexOf(pick) + 1) % pool.length];
+        }
+        elN1.value = String(pick[0]);
+        elN2.value = String(pick[1]);
+        if (state.hasThird && pick[2] !== undefined) {
+          elN3.value = String(pick[2]);
+        }
+        handleCalculate();
+      });
+
+      [elN1, elN2, elN3].forEach((input) => {
+        input.addEventListener('input', () => input.classList.remove('is-invalid'));
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleCalculate();
+          }
+        });
+      });
+
+      // Gotowe przykłady
+      document.querySelectorAll('.btn-preset').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const vals = btn.getAttribute('data-nums').split(',').map(Number);
+          elN1.value = String(vals[0]);
+          elN2.value = String(vals[1]);
+          if (vals.length === 3) {
+            setThirdField(true, vals[2]);
+          } else {
+            setThirdField(false);
+          }
+          handleCalculate();
+        });
+      });
+
+      // Przełączniki opcji
+      elOptPowers.addEventListener('change', () => {
+        state.showPowers = elOptPowers.checked;
+        renderAll();
+      });
+
+      elOptDivisibility.addEventListener('change', () => {
+        state.showDivisibility = elOptDivisibility.checked;
+        renderAll();
+      });
+
+      // Zakładki metod
+      elTabSeparate.addEventListener('click', () => setActiveTab('separate'));
+      elTabTable.addEventListener('click', () => setActiveTab('table'));
+      elTabDivisors.addEventListener('click', () => setActiveTab('divisors'));
+      elTabEuclid.addEventListener('click', () => setActiveTab('euclid'));
+
+      // Przyciski nawigacji kroków
+      elBtnStart.addEventListener('click', () => {
+        stopAutoPlay();
+        state.currentStep = 0;
+        renderAll();
+      });
+
+      elBtnPrev.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.currentStep > 0) {
+          state.currentStep--;
+          renderAll();
+        }
+      });
+
+      elBtnPlay.addEventListener('click', toggleAutoPlay);
+
+      elBtnNext.addEventListener('click', () => {
+        stopAutoPlay();
+        const steps = getActiveSteps();
+        if (state.currentStep < steps.length - 1) {
+          state.currentStep++;
+          renderAll();
+        }
+      });
+
+      elBtnEnd.addEventListener('click', () => {
+        stopAutoPlay();
+        const steps = getActiveSteps();
+        if (steps.length > 0) {
+          state.currentStep = steps.length - 1;
+          renderAll();
+        }
+      });
+
+      // Suwak tempa
+      elSpeedSlider.addEventListener('input', () => {
+        state.speedLevel = Number(elSpeedSlider.value);
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        if (state.isPlaying) {
+          stopAutoPlay();
+          toggleAutoPlay();
+        }
+      });
+
+      // Skróty klawiszowe (←, →, Spacja)
+      document.addEventListener('keydown', (e) => {
+        const tag = document.activeElement ? document.activeElement.tagName : '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+          return;
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          elBtnNext.click();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          elBtnPrev.click();
+        } else if (e.code === 'Space') {
+          e.preventDefault();
+          toggleAutoPlay();
+        }
+      });
+
+      // Inicjalizacja po załadowaniu strony
+      window.addEventListener('load', () => {
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        handleCalculate();
+      });
+    })();
+  </script>
+</body>
+</html>

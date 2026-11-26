@@ -1,0 +1,2385 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator dzielenia pisemnego</title>
+  <style>
+    /* =========================================================
+       ZMIENNE KOLORYSTYCZNE I TYPOGRAFIA (100% OFFLINE)
+       ========================================================= */
+    :root {
+      --bg-page: #f1f5f9;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-soft: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+
+      /* Kolory dydaktyczne dla etapów dzielenia */
+      --quotient-color: #047857;
+      --quotient-bg: rgba(236, 253, 245, 0.55);
+      --quotient-active-bg: #a7f3d0;
+      --quotient-active-border: #059669;
+
+      --partial-bg: #dbeafe;
+      --partial-border: #2563eb;
+      --partial-text: #1e3a8a;
+
+      --sub-color: #c2410c;
+      --sub-bg: #ffedd5;
+      --sub-border: #ea580c;
+
+      --bring-color: #7c3aed;
+      --bring-bg: #f3e8ff;
+      --bring-border: #9333ea;
+
+      --comma-color: #0f766e;
+      --comma-bg: #ccfbf1;
+      --comma-border: #0d9488;
+
+      --shift-bg: #fffbeb;
+      --shift-border: #f59e0b;
+      --shift-text: #92400e;
+
+      --period-color: #be123c;
+      --period-bg: #ffe4e6;
+
+      /* Styl kartki w kratkę */
+      --paper-bg: #fffef9;
+      --paper-grid: #cfe2f3;
+      --paper-margin: #fca5a5;
+      --cell-size: 46px;
+
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 20px 16px 40px;
+    }
+
+    /* =========================================================
+       UKŁAD GŁÓWNY I NAGŁÓWEK
+       ========================================================= */
+    .app-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .app-title-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .app-logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #059669, #2563eb);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 1.65rem;
+      font-weight: 900;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+      flex-shrink: 0;
+    }
+
+    .app-header h1 {
+      font-size: clamp(1.45rem, 3vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .app-subtitle {
+      color: var(--text-muted);
+      font-size: 0.96rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* =========================================================
+       KARTY (PANELE)
+       ========================================================= */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-md);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text-main);
+    }
+
+    /* =========================================================
+       LEWY PANEL: DANE WEJŚCIOWE, TRYB I PRZYKŁADY
+       ========================================================= */
+    .presets-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .btn-preset {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 0.81rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-family: var(--font-sans);
+    }
+
+    .btn-preset .preset-math {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.82rem;
+      color: #1e40af;
+      font-weight: 800;
+    }
+
+    .btn-preset:hover {
+      background: #dbeafe;
+      transform: translateY(-1px);
+    }
+
+    .btn-preset:active {
+      transform: translateY(0);
+    }
+
+    .inputs-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: end;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .field-group {
+      min-width: 0;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 5px;
+    }
+
+    .field-sub {
+      font-size: 0.73rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .number-input {
+      width: 100%;
+      padding: 10px 11px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--text-main);
+      background: #f8fafc;
+      border: 2px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .number-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #ffffff;
+    }
+
+    .number-input.is-invalid {
+      border-color: #dc2626;
+      background: #fef2f2;
+    }
+
+    .colon-sep {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--primary);
+      padding-bottom: 8px;
+      text-align: center;
+      user-select: none;
+    }
+
+    /* Przełącznik trybu wyniku */
+    .mode-box {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .mode-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 8px;
+    }
+
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .mode-tab {
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--text-muted);
+      font-size: 0.83rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+      text-align: center;
+    }
+
+    .mode-tab:hover {
+      border-color: #94a3b8;
+      color: var(--text-main);
+    }
+
+    .mode-tab.is-active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.22);
+    }
+
+    .precision-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .precision-row.is-hidden {
+      display: none;
+    }
+
+    .precision-select {
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+    }
+
+    .error-box {
+      display: none;
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.86rem;
+      margin-bottom: 12px;
+    }
+
+    .error-box.visible {
+      display: block;
+    }
+
+    .btn-primary-full {
+      width: 100%;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      font-size: 0.96rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
+      transition: background-color 0.15s ease, transform 0.1s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-primary-full:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-primary-full:active {
+      transform: translateY(1px);
+    }
+
+    .options-box {
+      border-top: 1px solid var(--border-soft);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.87rem;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      line-height: 1.35;
+    }
+
+    .toggle-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .hint-text {
+      font-size: 0.79rem;
+      color: var(--text-muted);
+      margin-top: 12px;
+      line-height: 1.45;
+    }
+
+    /* =========================================================
+       PRAWY PANEL: NAGŁÓWEK, BANER PRZESUNIĘCIA, KARTKA W KRATKĘ
+       ========================================================= */
+    .viz-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .badges-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stage-badge {
+      display: inline-flex;
+      align-items: center;
+      font-weight: 800;
+      font-size: 0.79rem;
+      padding: 5px 11px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border: 1px solid transparent;
+    }
+
+    .stage-setup { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+    .stage-shift { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .stage-divide { background: #dbeafe; color: #1e3a8a; border-color: #93c5fd; }
+    .stage-multiply { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
+    .stage-subtract { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+    .stage-bring { background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe; }
+    .stage-comma { background: #ccfbf1; color: #115e59; border-color: #5eead4; }
+    .stage-period { background: #ffe4e6; color: #9f1239; border-color: #fda4af; }
+    .stage-done { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+
+    .step-counter {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Pasek postępu */
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #059669, #2563eb);
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    /* Baner edukacyjny: przesunięcie przecinka */
+    .shift-banner {
+      display: none;
+      background: var(--shift-bg);
+      border: 1px solid #fcd34d;
+      border-left: 5px solid var(--shift-border);
+      color: var(--shift-text);
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+
+    .shift-banner.visible {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .shift-banner.is-emphasized {
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+    }
+
+    /* Kartka w kratkę z czerwonym marginesem */
+    .notebook-shell {
+      position: relative;
+      background-color: var(--paper-bg);
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.04), var(--shadow-sm);
+      overflow-x: auto;
+      padding: 24px 24px 28px 46px;
+      margin-bottom: 18px;
+      min-height: 240px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .notebook-shell::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 28px;
+      width: 2px;
+      background-color: var(--paper-margin);
+      opacity: 0.72;
+      pointer-events: none;
+    }
+
+    /* Siatka kratkowa (1 cyfra = 1 kratka) */
+    .math-grid {
+      display: grid;
+      border-top: 1px solid var(--paper-grid);
+      border-left: 1px solid var(--paper-grid);
+      background-color: var(--paper-bg);
+      width: max-content;
+      margin: 0 auto;
+    }
+
+    .grid-cell {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      border-right: 1px solid var(--paper-grid);
+      border-bottom: 1px solid var(--paper-grid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1e293b;
+      position: relative;
+      transition: background-color 0.2s ease;
+      user-select: none;
+    }
+
+    /* Wiersz ilorazu (NAD kreską) */
+    .grid-cell.cell-quotient {
+      color: var(--quotient-color);
+      font-size: 1.58rem;
+      font-weight: 800;
+      background-color: var(--quotient-bg);
+    }
+
+    .grid-cell.cell-quotient.has-div-line {
+      border-bottom: 3.5px solid #0f172a;
+    }
+
+    .grid-cell.cell-quotient.is-active-quotient {
+      background-color: var(--quotient-active-bg) !important;
+      box-shadow: inset 0 0 0 2.5px var(--quotient-active-border);
+    }
+
+    .grid-cell.cell-quotient.is-period-digit {
+      background-color: var(--period-bg) !important;
+      color: var(--period-color);
+    }
+
+    .period-bar {
+      position: absolute;
+      top: 4px;
+      left: 5px;
+      right: 5px;
+      height: 3px;
+      background: var(--period-color);
+      border-radius: 2px;
+    }
+
+    /* Znak dwukropka i dzielnik */
+    .grid-cell.cell-colon {
+      color: var(--primary);
+      font-size: 1.65rem;
+      font-weight: 900;
+    }
+
+    .grid-cell.cell-divisor {
+      color: #0f172a;
+      background-color: rgba(241, 245, 249, 0.55);
+    }
+
+    .grid-cell.cell-divisor.is-active-divisor {
+      background-color: #dbeafe !important;
+      color: #1e3a8a;
+      box-shadow: inset 0 0 0 2px #3b82f6;
+    }
+
+    /* Wyszarzone zero pomocnicze dopisane po przecinku w dzielnej */
+    .grid-cell.cell-aux-zero {
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .grid-cell.cell-aux-zero .aux-zero-mark {
+      border-bottom: 1.5px dashed #94a3b8;
+      line-height: 1.05;
+    }
+
+    /* Podświetlenie aktualnie rozpatrywanej częściowej dzielnej */
+    .grid-cell.is-partial-highlight {
+      background-color: var(--partial-bg) !important;
+      color: var(--partial-text);
+      box-shadow: inset 0 0 0 2px var(--partial-border);
+    }
+
+    /* Wiersz mnożenia / odejmowania (np. - 12) */
+    .grid-cell.cell-sub-row {
+      color: var(--sub-color);
+    }
+
+    .grid-cell.cell-sub-row.is-active-sub {
+      background-color: var(--sub-bg) !important;
+    }
+
+    .grid-cell.cell-sub-minus {
+      color: var(--sub-color);
+      font-size: 1.65rem;
+      font-weight: 900;
+    }
+
+    .grid-cell.has-sub-line {
+      border-bottom: 3px solid #0f172a;
+    }
+
+    /* Spisywana cyfra */
+    .grid-cell.is-bring-highlight {
+      background-color: var(--bring-bg) !important;
+      color: var(--bring-color);
+      box-shadow: inset 0 0 0 2px var(--bring-border);
+    }
+
+    /* Strzałka spisywania cyfr */
+    .drop-trail {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      border-left: 2.5px dashed var(--bring-color);
+      transform: translateX(-50%);
+      opacity: 0.7;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .drop-head {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--bring-color);
+      font-size: 0.9rem;
+      font-weight: 900;
+      line-height: 1;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* Przecinek dziesiętny — na prawej krawędzi kratki (nie zaburza siatki) */
+    .comma-overlay {
+      position: absolute;
+      right: -5px;
+      bottom: -1px;
+      z-index: 5;
+      font-family: var(--font-mono);
+      font-size: 1.85rem;
+      font-weight: 900;
+      line-height: 1;
+      color: #0f172a;
+      pointer-events: none;
+    }
+
+    .comma-overlay.is-quotient-comma {
+      color: var(--quotient-color);
+    }
+
+    .comma-overlay.is-aux-comma {
+      color: #94a3b8;
+    }
+
+    .comma-overlay.is-fresh-comma {
+      color: var(--comma-color);
+      text-shadow: 0 0 10px rgba(13, 148, 136, 0.5);
+      animation: commaPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes commaPop {
+      0% { transform: scale(2.2) translateY(-6px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .digit-pop {
+      display: inline-block;
+      animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.45); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* =========================================================
+       PANEL WYJAŚNIENIA DYDAKTYCZNEGO I PODSUMOWANIE
+       ========================================================= */
+    .explanation-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid var(--primary);
+      border-radius: var(--radius-md);
+      padding: 15px 18px;
+      margin-bottom: 18px;
+      min-height: 108px;
+      transition: border-left-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .explanation-card.theme-shift { border-left-color: #f59e0b; background: #fffbeb; border-color: #fde68a; }
+    .explanation-card.theme-divide { border-left-color: #2563eb; background: #eff6ff; border-color: #bfdbfe; }
+    .explanation-card.theme-multiply { border-left-color: #ea580c; background: #fff7ed; border-color: #fed7aa; }
+    .explanation-card.theme-subtract { border-left-color: #dc2626; background: #fef2f2; border-color: #fecaca; }
+    .explanation-card.theme-bring { border-left-color: #7c3aed; background: #faf5ff; border-color: #e9d5ff; }
+    .explanation-card.theme-comma { border-left-color: #0d9488; background: #f0fdfa; border-color: #99f6e4; }
+    .explanation-card.theme-period { border-left-color: #be123c; background: #fff1f2; border-color: #fecdd3; }
+    .explanation-card.theme-done { border-left-color: #047857; background: #ecfdf5; border-color: #a7f3d0; }
+
+    .explanation-title {
+      font-size: 0.87rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .explanation-card.theme-shift .explanation-title { color: #b45309; }
+    .explanation-card.theme-divide .explanation-title { color: #1d4ed8; }
+    .explanation-card.theme-multiply .explanation-title { color: #c2410c; }
+    .explanation-card.theme-subtract .explanation-title { color: #b91c1c; }
+    .explanation-card.theme-bring .explanation-title { color: #6d28d9; }
+    .explanation-card.theme-comma .explanation-title { color: #0f766e; }
+    .explanation-card.theme-period .explanation-title { color: #be123c; }
+    .explanation-card.theme-done .explanation-title { color: #047857; }
+
+    .explanation-body {
+      font-size: 0.99rem;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    .chip {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-size: 0.95em;
+    }
+
+    .chip-num { background: #e2e8f0; color: #0f172a; }
+    .chip-blue { background: #dbeafe; color: #1e3a8a; }
+    .chip-green { background: #d1fae5; color: #065f46; }
+    .chip-orange { background: #ffedd5; color: #9a3412; }
+    .chip-purple { background: #f3e8ff; color: #6b21a8; }
+    .chip-teal { background: #ccfbf1; color: #115e59; }
+    .chip-rose { background: #ffe4e6; color: #9f1239; }
+
+    .summary-box {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .summary-eq {
+      display: inline-block;
+      width: fit-content;
+      padding: 9px 14px;
+      background: #ffffff;
+      border: 2px solid #6ee7b7;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.14rem;
+      font-weight: 800;
+      color: #065f46;
+    }
+
+    .summary-check {
+      font-size: 0.88rem;
+      color: #065f46;
+      font-weight: 600;
+    }
+
+    /* =========================================================
+       STEROWANIE, SUWAK TEMPA I LEGENDA
+       ========================================================= */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .btn-ctrl {
+      padding: 10px 13px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-ctrl:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }
+
+    .btn-ctrl:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ctrl-primary {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .btn-ctrl-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .btn-ctrl-play {
+      background: #0f766e;
+      color: #ffffff;
+      border-color: #0f766e;
+      min-width: 120px;
+    }
+
+    .btn-ctrl-play:hover:not(:disabled) {
+      background: #115e59;
+      border-color: #115e59;
+    }
+
+    .btn-ctrl-play.is-playing {
+      background: #d97706;
+      border-color: #d97706;
+    }
+
+    .btn-ctrl-play.is-playing:hover:not(:disabled) {
+      background: #b45309;
+      border-color: #b45309;
+    }
+
+    .speed-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+    }
+
+    .speed-slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .speed-slider {
+      width: 130px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .speed-label-pill {
+      min-width: 68px;
+      text-align: center;
+      background: #e2e8f0;
+      color: var(--text-main);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .shortcuts-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      justify-content: center;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-soft);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    /* =========================================================
+       RESPONSYWNOŚĆ (TABLET / TELEFON)
+       ========================================================= */
+    @media (max-width: 600px) {
+      :root {
+        --cell-size: 38px;
+      }
+
+      body {
+        padding: 14px 10px 30px;
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .notebook-shell {
+        padding: 18px 14px 22px 34px;
+      }
+
+      .notebook-shell::before {
+        left: 20px;
+      }
+
+      .grid-cell {
+        font-size: 1.26rem;
+      }
+
+      .grid-cell.cell-quotient {
+        font-size: 1.32rem;
+      }
+
+      .comma-overlay {
+        font-size: 1.55rem;
+        right: -4px;
+      }
+
+      .controls-bar {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      #btn-end {
+        grid-column: span 2;
+      }
+
+      .shortcuts-hint {
+        display: none;
+      }
+    }
+  
+    /* =========================================================
+       PRZYCISK POWROTU DO MENU GŁÓWNEGO
+       ========================================================= */
+    .top-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .btn-back-menu {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 15px;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #1e293b;
+      border: 1.5px solid #cbd5e1;
+      text-decoration: none;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-back-menu:hover,
+    .btn-back-menu:focus-visible {
+      background: #eff6ff;
+      border-color: #2563eb;
+      color: #2563eb;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <nav class="top-nav-bar" aria-label="Nawigacja główna">
+      <a href="index.html" class="btn-back-menu" title="Wróć do menu głównego">← Menu</a>
+    </nav>
+
+    <!-- NAGŁÓWEK -->
+    <header class="app-header">
+      <div class="app-title-row">
+        <div class="app-logo" aria-hidden="true">:</div>
+        <h1>Kalkulator dzielenia pisemnego</h1>
+      </div>
+      <p class="app-subtitle">Polski zapis z wynikiem nad kreską (dzielna : dzielnik) — krok po kroku na kartce w kratkę, z obsługą ułamków dziesiętnych, przesuwania przecinka, reszty i ułamków okresowych.</p>
+    </header>
+
+    <main class="main-grid">
+      <!-- LEWY PANEL: DANE WEJŚCIOWE I OPCJE -->
+      <section class="card" aria-label="Wprowadzanie danych">
+        <h2 class="card-title">1. Wpisz dzielną i dzielnik</h2>
+
+        <div class="presets-label">Gotowe przykłady edukacyjne:</div>
+        <div class="presets-grid">
+          <button type="button" class="btn-preset" data-preset="simple">
+            <span>Proste bez reszty</span>
+            <span class="preset-math">744 : 6</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="midZero">
+            <span>Zero w środku + reszta</span>
+            <span class="preset-math">815 : 4</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="twoDigit">
+            <span>Dzielnik dwucyfrowy</span>
+            <span class="preset-math">942 : 15</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="decDividend">
+            <span>Ułamek w dzielnej</span>
+            <span class="preset-math">12,75 : 5</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="decDivisor">
+            <span>Przesuwanie przecinka</span>
+            <span class="preset-math">14,4 : 0,6</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="periodic">
+            <span>Ułamek okresowy</span>
+            <span class="preset-math">10 : 3</span>
+          </button>
+        </div>
+
+        <div class="inputs-row">
+          <div class="field-group">
+            <label class="field-label" for="input-dividend">
+              <span>Dzielna</span>
+              <span class="field-sub">do 7 cyfr</span>
+            </label>
+            <input type="text" id="input-dividend" class="number-input" inputmode="decimal" value="744" placeholder="np. 744" autocomplete="off">
+          </div>
+
+          <div class="colon-sep" aria-hidden="true">:</div>
+
+          <div class="field-group">
+            <label class="field-label" for="input-divisor">
+              <span>Dzielnik</span>
+              <span class="field-sub">do 5 cyfr</span>
+            </label>
+            <input type="text" id="input-divisor" class="number-input" inputmode="decimal" value="6" placeholder="np. 6" autocomplete="off">
+          </div>
+        </div>
+
+        <!-- TRYB WYNIKU -->
+        <div class="mode-box">
+          <div class="mode-title">Tryb wyniku</div>
+          <div class="mode-tabs" role="tablist" aria-label="Tryb wyniku">
+            <button type="button" id="mode-decimal" class="mode-tab is-active" role="tab" aria-selected="true">Rozwinięcie dziesiętne</button>
+            <button type="button" id="mode-remainder" class="mode-tab" role="tab" aria-selected="false">Wynik z resztą</button>
+          </div>
+          <div id="precision-row" class="precision-row">
+            <label for="precision-select">Limit miejsc po przecinku:</label>
+            <select id="precision-select" class="precision-select">
+              <option value="2">2 miejsca</option>
+              <option value="3">3 miejsca</option>
+              <option value="4" selected>4 miejsca</option>
+              <option value="6">6 miejsc</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="error-box" class="error-box" role="alert"></div>
+
+        <button type="button" id="btn-calculate" class="btn-primary-full">Wizualizuj dzielenie</button>
+
+        <div class="options-box">
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-arrows" checked>
+            <span>Pokaż strzałki spisywania cyfr</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-short-zero" checked>
+            <span>Skrócony zapis dla cyfry 0 w wyniku</span>
+          </label>
+        </div>
+
+        <p class="hint-text">
+          Wskazówka: możesz wpisywać przecinek (<strong>12,75</strong>) lub kropkę (<strong>12.75</strong>). W trybie rozwinięcia dziesiętnego kalkulator automatycznie wykrywa ułamki okresowe.
+        </p>
+      </section>
+
+      <!-- PRAWY PANEL: WIZUALIZACJA NA KARTCE W KRATKĘ -->
+      <section class="card" aria-label="Wizualizacja dzielenia pisemnego">
+        <div class="viz-header">
+          <h2 class="card-title" style="margin-bottom: 0;">2. Dzielenie w zeszycie</h2>
+          <div class="badges-group">
+            <span id="stage-badge" class="stage-badge stage-setup">Ustawienie</span>
+            <span id="step-counter" class="step-counter">Krok 0 z 0</span>
+          </div>
+        </div>
+
+        <!-- PASEK POSTĘPU -->
+        <div class="progress-track" aria-hidden="true">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+
+        <!-- BANER EDUKACYJNY: PRZESUWANIE PRZECINKA -->
+        <div id="shift-banner" class="shift-banner" role="status">
+          <span aria-hidden="true" style="font-size: 1.15rem; line-height: 1.2;">💡</span>
+          <div id="shift-banner-text"></div>
+        </div>
+
+        <!-- KARTKA W KRATKĘ -->
+        <div class="notebook-shell">
+          <div id="math-grid" class="math-grid" aria-live="polite"></div>
+        </div>
+
+        <!-- KARTA OBJAŚNIEŃ -->
+        <div id="explanation-card" class="explanation-card">
+          <div id="explanation-title" class="explanation-title">Przygotowanie</div>
+          <div id="explanation-body" class="explanation-body"></div>
+        </div>
+
+        <!-- PASEK STEROWANIA -->
+        <div class="controls-bar">
+          <button type="button" id="btn-start" class="btn-ctrl" title="Wróć na początek">|◀ Start</button>
+          <button type="button" id="btn-prev" class="btn-ctrl" title="Poprzedni krok (Strzałka w lewo)">◀ Poprzedni</button>
+          <button type="button" id="btn-play" class="btn-ctrl btn-ctrl-play" title="Odtwórz / Pauza (Spacja)">▶ Odtwórz</button>
+          <button type="button" id="btn-next" class="btn-ctrl btn-ctrl-primary" title="Następny krok (Strzałka w prawo)">Następny ▶</button>
+          <button type="button" id="btn-end" class="btn-ctrl" title="Przejdź na koniec">Koniec ▶|</button>
+        </div>
+
+        <!-- SUWAK TEMPA I SKRÓTY -->
+        <div class="speed-row">
+          <label class="speed-slider-wrap" for="speed-slider">
+            <span>Tempo:</span>
+            <input type="range" id="speed-slider" class="speed-slider" min="1" max="3" step="1" value="2">
+            <span id="speed-label" class="speed-label-pill">Średnio</span>
+          </label>
+          <div class="shortcuts-hint">
+            Skróty: <span class="kbd">←</span> <span class="kbd">→</span> krok, <span class="kbd">Spacja</span> odtwórz/pauza
+          </div>
+        </div>
+
+        <!-- LEGENDA -->
+        <div class="legend-row">
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #a7f3d0; border: 1.5px solid #059669;"></span>
+            Iloraz (wynik)
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #dbeafe; border: 1.5px solid #2563eb;"></span>
+            Częściowa dzielna
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #ffedd5; border: 1.5px solid #ea580c;"></span>
+            Mnożenie i odejmowanie
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #f3e8ff; border: 1.5px solid #9333ea;"></span>
+            Spisywana cyfra
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background: #ffe4e6; border: 1.5px solid #be123c;"></span>
+            Okres ułamka
+          </span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /**
+     * KALKULATOR DZIELENIA PISEMNEGO (POLSKI ZAPIS)
+     * Obliczenia dokładne na BigInt i napisach — brak błędów zmiennoprzecinkowych.
+     */
+    (function () {
+      'use strict';
+
+      // =========================================================
+      // GOTOWE PRZYKŁADY I KONFIGURACJA TEMPA
+      // =========================================================
+      const PRESETS = {
+        simple: { a: '744', b: '6', mode: 'decimal' },
+        midZero: { a: '815', b: '4', mode: 'remainder' },
+        twoDigit: { a: '942', b: '15', mode: 'decimal' },
+        decDividend: { a: '12,75', b: '5', mode: 'decimal' },
+        decDivisor: { a: '14,4', b: '0,6', mode: 'decimal' },
+        periodic: { a: '10', b: '3', mode: 'decimal' }
+      };
+
+      const SPEED_MAP = {
+        1: { label: 'Wolno', ms: 2300 },
+        2: { label: 'Średnio', ms: 1400 },
+        3: { label: 'Szybko', ms: 720 }
+      };
+
+      // =========================================================
+      // STAN APLIKACJI
+      // =========================================================
+      const state = {
+        mode: 'decimal',      // 'decimal' | 'remainder'
+        maxDecimals: 4,
+        showArrows: true,
+        shortZero: true,
+        model: null,
+        currentStep: 0,
+        isPlaying: false,
+        playTimer: null,
+        speedLevel: 2
+      };
+
+      // =========================================================
+      // ELEMENTY DOM
+      // =========================================================
+      const elDividend = document.getElementById('input-dividend');
+      const elDivisor = document.getElementById('input-divisor');
+      const elModeDecimal = document.getElementById('mode-decimal');
+      const elModeRemainder = document.getElementById('mode-remainder');
+      const elPrecisionRow = document.getElementById('precision-row');
+      const elPrecisionSelect = document.getElementById('precision-select');
+      const elErrorBox = document.getElementById('error-box');
+      const elBtnCalculate = document.getElementById('btn-calculate');
+      const elOptArrows = document.getElementById('opt-arrows');
+      const elOptShortZero = document.getElementById('opt-short-zero');
+
+      const elStageBadge = document.getElementById('stage-badge');
+      const elStepCounter = document.getElementById('step-counter');
+      const elProgressFill = document.getElementById('progress-fill');
+      const elShiftBanner = document.getElementById('shift-banner');
+      const elShiftBannerText = document.getElementById('shift-banner-text');
+      const elMathGrid = document.getElementById('math-grid');
+      const elExplanationCard = document.getElementById('explanation-card');
+      const elExplanationTitle = document.getElementById('explanation-title');
+      const elExplanationBody = document.getElementById('explanation-body');
+
+      const elBtnStart = document.getElementById('btn-start');
+      const elBtnPrev = document.getElementById('btn-prev');
+      const elBtnPlay = document.getElementById('btn-play');
+      const elBtnNext = document.getElementById('btn-next');
+      const elBtnEnd = document.getElementById('btn-end');
+      const elSpeedSlider = document.getElementById('speed-slider');
+      const elSpeedLabel = document.getElementById('speed-label');
+
+      // =========================================================
+      // WALIDACJA, PARSOWANIE I PRZESUWANIE PRZECINKA
+      // =========================================================
+
+      function parseInputNumber(rawText, fieldName, maxDigits) {
+        const cleaned = rawText.trim().replace(/\s+/g, '').replace(/\./g, ',');
+
+        if (cleaned === '') {
+          return { ok: false, error: `Pole „${fieldName}” jest puste. Wpisz liczbę.` };
+        }
+        if (cleaned.startsWith('-') || cleaned.startsWith('−')) {
+          return { ok: false, error: `Pole „${fieldName}” zawiera liczbę ujemną. Wpisz liczbę nieujemną.` };
+        }
+        if (!/^\d+(,\d+)?$/.test(cleaned)) {
+          return {
+            ok: false,
+            error: `Nieprawidłowy zapis w polu „${fieldName}” (${rawText}). Używaj wyłącznie cyfr oraz opcjonalnie jednego przecinka lub kropki.`
+          };
+        }
+
+        const parts = cleaned.split(',');
+        const intPart = parts[0].replace(/^0+(?=\d)/, '');
+        const fracPart = parts[1] || '';
+        const allDigits = intPart + fracPart;
+
+        if (allDigits.length > maxDigits) {
+          return {
+            ok: false,
+            error: `Liczba w polu „${fieldName}” ma za dużo cyfr (${allDigits.length}). Maksymalna długość to ${maxDigits} cyfr.`
+          };
+        }
+
+        const significantBig = BigInt(allDigits.replace(/^0+/, '') || '0');
+        return {
+          ok: true,
+          value: {
+            intPart,
+            fracPart,
+            decPlaces: fracPart.length,
+            isZero: significantBig === 0n,
+            display: fracPart.length > 0 ? `${intPart},${fracPart}` : intPart
+          }
+        };
+      }
+
+      /**
+       * Przesuwa przecinek w liczbie w prawo o `shift` miejsc (mnożenie przez 10^shift).
+       */
+      function shiftDecimalRight(numObj, shift) {
+        if (shift === 0) {
+          return {
+            intPart: numObj.intPart,
+            fracPart: numObj.fracPart,
+            decPlaces: numObj.fracPart.length,
+            display: numObj.display
+          };
+        }
+
+        let newInt = numObj.intPart;
+        let newFrac = numObj.fracPart;
+
+        if (shift >= newFrac.length) {
+          const zerosToAdd = shift - newFrac.length;
+          newInt = (newInt + newFrac + '0'.repeat(zerosToAdd)).replace(/^0+(?=\d)/, '');
+          newFrac = '';
+        } else {
+          newInt = (newInt + newFrac.slice(0, shift)).replace(/^0+(?=\d)/, '');
+          newFrac = newFrac.slice(shift);
+        }
+
+        return {
+          intPart: newInt,
+          fracPart: newFrac,
+          decPlaces: newFrac.length,
+          display: newFrac.length > 0 ? `${newInt},${newFrac}` : newInt
+        };
+      }
+
+      /**
+       * Odmiana słowa "miejsce" po polsku.
+       */
+      function pluralMiejsca(n) {
+        if (n === 1) return '1 miejsce';
+        if (n >= 2 && n <= 4) return `${n} miejsca`;
+        return `${n} miejsc`;
+      }
+
+      /**
+       * Głębokie klonowanie wierszy roboczych na potrzeby migawek kroków.
+       */
+      function cloneWorkRows(rows) {
+        return rows.map(r => ({
+          type: r.type,
+          digits: { ...r.digits },
+          minusCol: r.minusCol,
+          lineStart: r.lineStart,
+          lineEnd: r.lineEnd,
+          auxCols: new Set(r.auxCols || [])
+        }));
+      }
+
+      /**
+       * Formatuje liczbę całkowitą z `fracScale` miejscami po przecinku (do sprawdzenia wyniku).
+       */
+      function formatScaledBigInt(bigVal, fracScale) {
+        const s = bigVal.toString();
+        if (fracScale === 0) return s;
+        const padded = s.padStart(fracScale + 1, '0');
+        const iPart = padded.slice(0, padded.length - fracScale);
+        const fPart = padded.slice(padded.length - fracScale).replace(/0+$/, '');
+        return fPart.length > 0 ? `${iPart},${fPart}` : iPart;
+      }
+
+      // =========================================================
+      // SILNIK DZIELENIA PISEMNEGO I GENEROWANIA KROKÓW
+      // =========================================================
+
+      function buildDivisionModel(origDividend, origDivisor, options) {
+        const { mode, maxDecimals, shortZero } = options;
+
+        // 1. Przesunięcie przecinka (jeśli dzielnik jest ułamkiem dziesiętnym)
+        const shiftCount = origDivisor.decPlaces;
+        const shiftedDividend = shiftDecimalRight(origDividend, shiftCount);
+        const shiftedDivisor = shiftDecimalRight(origDivisor, shiftCount);
+
+        const divisorBig = BigInt(shiftedDivisor.intPart); // Zawsze liczba całkowita > 0
+        const divisorDigitsStr = shiftedDivisor.intPart;
+
+        // 2. Rozkład dzielnej na kolumny (kolumna 0 jest zarezerwowana na znak minus przy odejmowaniu)
+        const intLen = shiftedDividend.intPart.length;
+        const origFracLen = shiftedDividend.fracPart.length;
+        const origDividendDigitsStr = shiftedDividend.intPart + shiftedDividend.fracPart;
+        const origDividendEndCol = intLen + origFracLen; // Ostatnia oryginalna kolumna dzielnej (1-based)
+        const commaCol = intLen; // Przecinek zawsze stoi na prawej krawędzi kolumny intLen (gdy dzielna ma ułamek lub wynik go ma)
+
+        const dividendDigits = {}; // col -> char
+        const auxZeroCols = new Set(); // Kolumny dopisanych zer pomocniczych po przecinku
+
+        for (let i = 0; i < origDividendDigitsStr.length; i++) {
+          dividendDigits[1 + i] = origDividendDigitsStr[i];
+        }
+
+        // Stan symulacji
+        const quotientDigits = {}; // col -> char
+        const workRows = [];       // Wiersze robocze poniżej dzielnej: { type: 'sub'|'rem', digits: {col: char}, minusCol, lineStart, lineEnd, auxCols }
+        let showQuotientComma = false;
+        let showDividendComma = origFracLen > 0;
+        let dividendAuxComma = false; // Czy przecinek w dzielnej był dopisany pomocniczo (gdy dzielna była całkowita)
+
+        const steps = [];
+
+        function pushStep(cfg) {
+          steps.push({
+            stage: cfg.stage,
+            stageLabel: cfg.stageLabel,
+            title: cfg.title,
+            explanationHtml: cfg.explanationHtml,
+            dividendDigits: { ...dividendDigits },
+            auxZeroCols: new Set(auxZeroCols),
+            showDividendComma,
+            dividendAuxComma,
+            quotientDigits: { ...quotientDigits },
+            showQuotientComma,
+            freshQuotientComma: Boolean(cfg.freshQuotientComma),
+            activeQuotientCol: cfg.activeQuotientCol !== undefined ? cfg.activeQuotientCol : null,
+            activeDivisor: Boolean(cfg.activeDivisor),
+            // Podświetlenie częściowej dzielnej: { rowIdx: -1 (wiersz dzielnej) lub indeks w workRows, startCol, endCol }
+            partialHighlight: cfg.partialHighlight ? { ...cfg.partialHighlight } : null,
+            // Podświetlenie aktywnego wiersza mnożenia/odejmowania
+            activeSubRowIdx: cfg.activeSubRowIdx !== undefined ? cfg.activeSubRowIdx : null,
+            // Podświetlenie spisywanej cyfry + strzałka spisywania
+            bringInfo: cfg.bringInfo ? { ...cfg.bringInfo } : null, // { col, targetRowIdx }
+            // Okres ułamka
+            periodRange: cfg.periodRange ? { ...cfg.periodRange } : null, // { startCol, endCol }
+            workRows: cloneWorkRows(workRows)
+          });
+        }
+
+        // =======================================================
+        // KROK 0 / KROK WSTĘPNY: PRZESUNIĘCIE PRZECINKA LUB USTAWIENIE
+        // =======================================================
+        if (shiftCount > 0) {
+          const multStr = '1' + '0'.repeat(shiftCount);
+          pushStep({
+            stage: 'shift',
+            stageLabel: 'Przesunięcie przecinka',
+            title: 'Krok 1: Przesuwamy przecinek w obu liczbach',
+            explanationHtml: `Dzielnik <span class="chip chip-num">${origDivisor.display}</span> jest ułamkiem dziesiętnym. Aby ułatwić dzielenie pisemne, przesuwamy przecinek w obu liczbach o <strong>${pluralMiejsca(shiftCount)} w prawo</strong> (mnożymy obie liczby przez <span class="chip chip-teal">${multStr}</span>): <span class="chip chip-num">${origDividend.display} : ${origDivisor.display}</span> = <span class="chip chip-blue">${shiftedDividend.display} : ${shiftedDivisor.display}</span>.`
+          });
+        } else {
+          pushStep({
+            stage: 'setup',
+            stageLabel: 'Ustawienie',
+            title: 'Ustawienie dzielenia pisemnego',
+            explanationHtml: `Zapisujemy działanie <span class="chip chip-blue">${shiftedDividend.display}</span> : <span class="chip chip-num">${shiftedDivisor.display}</span> pod poziomą kreską. Wynik (iloraz) będziemy wpisywać <strong>nad kreską</strong>, dokładnie nad odpowiednimi cyframi dzielnej.`
+          });
+        }
+
+        // =======================================================
+        // GŁÓWNA PĘTLA DZIELENIA PISEMNEGO
+        // =======================================================
+        let currentVal = 0n;
+        let currentStartCol = 1;
+        let currentRowIdx = -1; // -1 oznacza wiersz dzielnej, >= 0 oznacza indeks w workRows
+        let hasStartedQuotient = false;
+        let inDecimalPart = false;
+        let decimalsWritten = 0;
+
+        // Słownik do wykrywania ułamków okresowych: remainderStr -> col (kolumna, dla której ta reszta występuje przy dopisywaniu zer)
+        const seenRemainders = new Map();
+        let detectedPeriod = null; // { startCol, endCol }
+        let stoppedByLimit = false;
+        let finalRemainder = 0n;
+
+        // Maksymalna kolumna, do której możemy dojść
+        const maxAllowedCol = mode === 'decimal'
+          ? Math.max(origDividendEndCol, commaCol + maxDecimals)
+          : origDividendEndCol;
+
+        let col = 1;
+
+        // Jeśli dzielna jest równa 0
+        if (BigInt(origDividendDigitsStr.replace(/^0+/, '') || '0') === 0n) {
+          quotientDigits[commaCol] = '0';
+          pushStep({
+            stage: 'divide',
+            stageLabel: 'Dzielenie',
+            title: 'Dzielenie zera',
+            activeQuotientCol: commaCol,
+            activeDivisor: true,
+            partialHighlight: { rowIdx: -1, startCol: 1, endCol: commaCol },
+            explanationHtml: `Zero podzielone przez <span class="chip chip-num">${shiftedDivisor.display}</span> zawsze daje <span class="chip chip-green">0</span>. Wpisujemy <span class="chip chip-green">0</span> nad kreską.`
+          });
+          finalRemainder = 0n;
+        } else {
+          while (col <= maxAllowedCol) {
+            const isPastComma = col > commaCol;
+
+            // A. Krok przepisania przecinka do wyniku (dokładnie przy przejściu z kolumny commaCol do commaCol + 1)
+            if (isPastComma && !inDecimalPart) {
+              inDecimalPart = true;
+              showQuotientComma = true;
+              if (!showDividendComma) {
+                showDividendComma = true;
+                dividendAuxComma = true;
+              }
+              pushStep({
+                stage: 'comma',
+                stageLabel: 'Przecinek w wyniku',
+                title: 'Przepisujemy przecinek do wyniku',
+                freshQuotientComma: true,
+                explanationHtml: dividendAuxComma
+                  ? 'Wykorzystaliśmy całą część całkowitą dzielnej, a reszta jest większa od zera. Stawiamy <span class="chip chip-teal">,</span> w wyniku (oraz pomocniczo w dzielnej) i możemy dopisywać zera po przecinku.'
+                  : 'Dotarliśmy do przecinka w dzielnej. Przepisujemy <span class="chip chip-teal">,</span> do wyniku dokładnie nad przecinkiem w dzielnej.'
+              });
+            }
+
+            // B. Jeśli jesteśmy poza oryginalnymi cyframi dzielnej (tryb dziesiętny), sprawdzamy okres i dopisujemy 0
+            const isAuxZero = col > origDividendEndCol;
+            if (isAuxZero) {
+              // Jeśli reszta = 0, dzielenie zakończyło się dokładnie!
+              if (currentVal === 0n) {
+                break;
+              }
+              // Zapisujemy resztę przed dopisaniem zera w kolumnie `col` do wykrywania okresu
+              const remKey = currentVal.toString();
+              if (seenRemainders.has(remKey)) {
+                const pStart = seenRemainders.get(remKey);
+                const pEnd = col - 1;
+                detectedPeriod = { startCol: pStart, endCol: pEnd };
+                let periodDigitsStr = '';
+                for (let pc = pStart; pc <= pEnd; pc++) {
+                  periodDigitsStr += quotientDigits[pc];
+                }
+                pushStep({
+                  stage: 'period',
+                  stageLabel: 'Wykryto okres!',
+                  title: 'Powtarzająca się reszta — ułamek okresowy',
+                  periodRange: detectedPeriod,
+                  explanationHtml: `Reszta <span class="chip chip-rose">${remKey}</span> pojawiła się już wcześniej podczas dopisywania zer! Oznacza to, że cyfra lub grupa cyfr <span class="chip chip-rose">${periodDigitsStr}</span> będzie powtarzać się w nieskończoność. Zapisujemy ją w nawiasie jako okres: <span class="chip chip-rose">(${periodDigitsStr})</span>.`
+                });
+                break;
+              }
+              seenRemainders.set(remKey, col);
+              dividendDigits[col] = '0';
+              auxZeroCols.add(col);
+            }
+
+            const digitChar = dividendDigits[col];
+            const digitBig = BigInt(digitChar);
+
+            // C. Spisywanie kolejnej cyfry (jeśli mamy już wiersz roboczy z poprzedniego odejmowania)
+            if (currentRowIdx >= 0) {
+              const prevRem = currentVal;
+              currentVal = currentVal * 10n + digitBig;
+              const targetRow = workRows[currentRowIdx];
+              targetRow.digits[col] = digitChar;
+              if (isAuxZero) {
+                targetRow.auxCols.add(col);
+              }
+              // Jeśli poprzednia reszta wynosiła 0, początkiem nowej liczby jest kolumna `col` (lub zachowujemy 0 z lewej dla czytelności)
+              const valStr = currentVal.toString();
+              currentStartCol = col - valStr.length + 1;
+
+              const bringExplain = isAuxZero
+                ? `Dopisujemy pomocnicze <span class="chip chip-purple">0</span> po przecinku i spisujemy je w dół obok reszty <span class="chip chip-num">${prevRem}</span>. Otrzymujemy <span class="chip chip-blue">${currentVal}</span>.`
+                : `Spisujemy kolejną cyfrę dzielnej (<span class="chip chip-purple">${digitChar}</span>) w dół obok reszty <span class="chip chip-num">${prevRem}</span>. Otrzymujemy <span class="chip chip-blue">${currentVal}</span>.`;
+
+              pushStep({
+                stage: 'bring',
+                stageLabel: 'Spisywanie cyfry',
+                title: isAuxZero ? 'Dopisanie i spisanie zera pomocniczego' : `Spisujemy cyfrę ${digitChar}`,
+                bringInfo: { col, targetRowIdx: currentRowIdx },
+                explanationHtml: bringExplain
+              });
+            } else {
+              // Nadal jesteśmy w wierszu dzielnej (przed pierwszym odejmowaniem)
+              currentVal = currentVal * 10n + digitBig;
+
+              // Jeśli jeszcze nie zaczęliśmy wyniku i cyfra nie wystarcza, a nie jesteśmy jeszcze na kolumnie jedności:
+              // bierzemy kolejną cyfrę dzielnej razem (np. 94 w 942 : 15 lub 12 w 12,75 : 5).
+              if (!hasStartedQuotient && currentVal < divisorBig && col < commaCol) {
+                col++;
+                continue;
+              }
+            }
+
+            // D. Wyznaczenie cyfry ilorazu dla kolumny `col`
+            const qBig = currentVal / divisorBig;
+            const qStr = qBig.toString();
+            const prodBig = qBig * divisorBig;
+            const nextRem = currentVal - prodBig;
+
+            quotientDigits[col] = qStr;
+            hasStartedQuotient = true;
+            if (isPastComma) {
+              decimalsWritten++;
+            }
+
+            const highlightObj = {
+              rowIdx: currentRowIdx,
+              startCol: currentStartCol,
+              endCol: col
+            };
+
+            // Krok: Dzielenie
+            if (qBig === 0n) {
+              let divZeroExplain = `Sprawdzamy, ile razy <span class="chip chip-num">${divisorBig}</span> mieści się w <span class="chip chip-blue">${currentVal}</span>. Nie mieści się ani razu (<span class="chip chip-blue">${currentVal}</span> &lt; <span class="chip chip-num">${divisorBig}</span>), więc wpisujemy <span class="chip chip-green">0</span> nad kreską.`;
+              if (shortZero && col < maxAllowedCol) {
+                divZeroExplain += ' W skróconym zapisie nie odejmujemy zera — w następnym kroku od razu spiszemy kolejną cyfrę.';
+              }
+
+              pushStep({
+                stage: 'divide',
+                stageLabel: 'Dzielenie',
+                title: `Dzielimy ${currentVal} przez ${divisorBig}`,
+                activeQuotientCol: col,
+                activeDivisor: true,
+                partialHighlight: highlightObj,
+                explanationHtml: divZeroExplain
+              });
+
+              // Skrócony zapis dla zera: pomijamy wiersz "- 0" i odejmowanie
+              if (shortZero) {
+                finalRemainder = currentVal;
+                // Jeśli w trybie dziesiętnym właśnie dotarliśmy do końca (lub do zera), sprawdźmy przerwanie
+                if (col >= origDividendEndCol && currentVal === 0n) {
+                  break;
+                }
+                // Jeśli nadal byliśmy w wierszu dzielnej (np. 3 : 8 -> wpisaliśmy 0 nad 3), a zaraz przejdziemy do ułamka,
+                // utwórzmy wiersz reszty, albo pozwólmy spisywać dalej w wierszu dzielnej?
+                // Jeśli w 3 : 8 zostaniemy w wierszu dzielnej, to po przecinku dopiszemy 0 w dzielnej i 30 będzie w wierszu dzielnej — bardzo czysto!
+                col++;
+                continue;
+              }
+            } else {
+              pushStep({
+                stage: 'divide',
+                stageLabel: 'Dzielenie',
+                title: `Dzielimy ${currentVal} przez ${divisorBig}`,
+                activeQuotientCol: col,
+                activeDivisor: true,
+                partialHighlight: highlightObj,
+                explanationHtml: `Sprawdzamy, ile razy <span class="chip chip-num">${divisorBig}</span> mieści się w <span class="chip chip-blue">${currentVal}</span>. Mieści się <span class="chip chip-green">${qStr}</span> ${qBig === 1n ? 'raz' : 'razy'}. Wpisujemy <span class="chip chip-green">${qStr}</span> nad kreską.`
+              });
+            }
+
+            // E. Krok: Mnożenie (wiersz z minusem i kreską odejmowania)
+            const prodStr = prodBig.toString();
+            const prodStartCol = col - prodStr.length + 1;
+            const lineStartCol = Math.min(currentStartCol, prodStartCol);
+            const minusCol = Math.max(0, prodStartCol - 1);
+
+            const subRow = {
+              type: 'sub',
+              digits: {},
+              minusCol,
+              lineStart: lineStartCol,
+              lineEnd: col,
+              auxCols: new Set()
+            };
+            for (let k = 0; k < prodStr.length; k++) {
+              subRow.digits[prodStartCol + k] = prodStr[k];
+            }
+            const subRowIdx = workRows.length;
+            workRows.push(subRow);
+
+            pushStep({
+              stage: 'multiply',
+              stageLabel: 'Mnożenie',
+              title: `Mnożymy ${qStr} × ${divisorBig}`,
+              activeQuotientCol: col,
+              activeDivisor: true,
+              activeSubRowIdx: subRowIdx,
+              explanationHtml: `Mnożymy wpisaną cyfrę wyniku przez dzielnik: <span class="chip chip-green">${qStr}</span> × <span class="chip chip-num">${divisorBig}</span> = <span class="chip chip-orange">${prodStr}</span>. Zapisujemy <span class="chip chip-orange">−${prodStr}</span> pod spodem i rysujemy kreskę odejmowania.`
+            });
+
+            // F. Krok: Odejmowanie (wiersz reszty)
+            const remStr = nextRem.toString();
+            const remStartCol = col - remStr.length + 1;
+            const remRow = {
+              type: 'rem',
+              digits: {},
+              minusCol: null,
+              lineStart: null,
+              lineEnd: null,
+              auxCols: new Set()
+            };
+            for (let k = 0; k < remStr.length; k++) {
+              remRow.digits[remStartCol + k] = remStr[k];
+            }
+            const remRowIdx = workRows.length;
+            workRows.push(remRow);
+
+            const prevValForText = currentVal;
+            currentVal = nextRem;
+            currentRowIdx = remRowIdx;
+            currentStartCol = remStartCol;
+            finalRemainder = nextRem;
+
+            pushStep({
+              stage: 'subtract',
+              stageLabel: 'Odejmowanie',
+              title: `Odejmujemy ${prevValForText} − ${prodStr}`,
+              partialHighlight: { rowIdx: remRowIdx, startCol: remStartCol, endCol: col },
+              explanationHtml: `Odejmujemy: <span class="chip chip-blue">${prevValForText}</span> − <span class="chip chip-orange">${prodStr}</span> = <span class="chip chip-num">${remStr}</span>. Zapisujemy resztę <span class="chip chip-num">${remStr}</span> pod kreską.`
+            });
+
+            // Jeśli wyczerpaliśmy oryginalne cyfry dzielnej i reszta = 0, dzielenie się kończy!
+            if (col >= origDividendEndCol && currentVal === 0n) {
+              break;
+            }
+
+            // W trybie dziesiętnym sprawdźmy natychmiast, czy nowa reszta po odejmowaniu (gdy następna kolumna będzie zerem pomocniczym) już się powtórzyła!
+            if (mode === 'decimal' && col >= origDividendEndCol && currentVal > 0n) {
+              const remKeyAfter = currentVal.toString();
+              if (seenRemainders.has(remKeyAfter)) {
+                const pStart = seenRemainders.get(remKeyAfter);
+                const pEnd = col;
+                detectedPeriod = { startCol: pStart, endCol: pEnd };
+                let periodDigitsStr = '';
+                for (let pc = pStart; pc <= pEnd; pc++) {
+                  periodDigitsStr += quotientDigits[pc];
+                }
+                pushStep({
+                  stage: 'period',
+                  stageLabel: 'Wykryto okres!',
+                  title: 'Powtarzająca się reszta — ułamek okresowy',
+                  periodRange: detectedPeriod,
+                  explanationHtml: `Po odejmowaniu znowu otrzymaliśmy resztę <span class="chip chip-rose">${remKeyAfter}</span>, która pojawiła się już wcześniej! Oznacza to, że grupa cyfr <span class="chip chip-rose">${periodDigitsStr}</span> będzie się powtarzać w nieskończoność. Zapisujemy ją w nawiasie: <span class="chip chip-rose">(${periodDigitsStr})</span>.`
+                });
+                break;
+              }
+            }
+
+            col++;
+          }
+
+          // Czy zatrzymaliśmy się przez limit miejsc po przecinku w trybie dziesiętnym?
+          if (mode === 'decimal' && !detectedPeriod && finalRemainder > 0n && decimalsWritten >= maxDecimals) {
+            stoppedByLimit = true;
+          }
+        }
+
+        // =======================================================
+        // KROK KOŃCOWY: PODSUMOWANIE I SPRAWDZENIE WYNIKU
+        // =======================================================
+        const qCols = Object.keys(quotientDigits).map(Number).sort((a, b) => a - b);
+        let quotientStr = '';
+        let periodicQuotientStr = '';
+
+        qCols.forEach((c) => {
+          if (detectedPeriod && c === detectedPeriod.startCol) {
+            periodicQuotientStr += '(';
+          }
+          quotientStr += quotientDigits[c];
+          periodicQuotientStr += quotientDigits[c];
+          if (detectedPeriod && c === detectedPeriod.endCol) {
+            periodicQuotientStr += ')';
+          }
+          if (showQuotientComma && c === commaCol && c !== qCols[qCols.length - 1]) {
+            quotientStr += ',';
+            periodicQuotientStr += ',';
+          }
+        });
+
+        // Budowanie napisu wyniku końcowego i sprawdzenia
+        let finalEq = '';
+        let checkHtml = '';
+        let summaryIntro = 'Dzielenie pisemne zostało zakończone.';
+
+        if (detectedPeriod) {
+          summaryIntro = 'Wykryto ułamek dziesiętny okresowy — cyfry w nawiasie powtarzają się w nieskończoność.';
+          finalEq = `${origDividend.display} : ${origDivisor.display} = ${periodicQuotientStr}`;
+          checkHtml = `Zapis rozwinięty: ${quotientStr}...`;
+        } else if (stoppedByLimit) {
+          summaryIntro = `Osiągnięto wybrany limit ${maxDecimals} miejsc po przecinku (została jeszcze reszta ${finalRemainder}). Zwiększ limit w panelu po lewej, aby zobaczyć dalsze cyfry lub okres.`;
+          finalEq = `${origDividend.display} : ${origDivisor.display} ≈ ${quotientStr}...`;
+        } else if (mode === 'remainder' && finalRemainder > 0n) {
+          // Reszta w trybie z resztą (uwzględniamy ewentualne miejsce po przecinku dzielnej)
+          const remScale = shiftedDividend.decPlaces;
+          const remFormatted = formatScaledBigInt(finalRemainder, remScale);
+          finalEq = `${origDividend.display} : ${origDivisor.display} = ${quotientStr} r. ${remFormatted}`;
+
+          // Sprawdzenie (na przesuniętych liczbach, jeśli dzielnik był ułamkiem, albo na oryginalnych)
+          if (shiftCount === 0) {
+            checkHtml = `Sprawdzenie: ${quotientStr} × ${origDivisor.display} + ${remFormatted} = ${origDividend.display}`;
+          } else {
+            checkHtml = `Sprawdzenie (po przesunięciu przecinka): ${quotientStr} × ${shiftedDivisor.display} + ${remFormatted} = ${shiftedDividend.display}`;
+          }
+        } else {
+          // Dzielenie dokładne (reszta 0)
+          finalEq = `${origDividend.display} : ${origDivisor.display} = ${quotientStr}`;
+          checkHtml = `Sprawdzenie: ${quotientStr} × ${origDivisor.display} = ${origDividend.display}`;
+        }
+
+        let summaryHtml = `${summaryIntro}<div class="summary-box"><div class="summary-eq">${finalEq}</div>`;
+        if (checkHtml) {
+          summaryHtml += `<div class="summary-check">✓ ${checkHtml}</div>`;
+        }
+        summaryHtml += `</div>`;
+
+        pushStep({
+          stage: 'done',
+          stageLabel: 'Podsumowanie',
+          title: 'Gotowe! Wynik końcowy',
+          periodRange: detectedPeriod,
+          explanationHtml: summaryHtml
+        });
+
+        // Całkowita szerokość siatki (na podstawie największej kolumny użytej w dzielnej)
+        const finalDividendCols = Math.max(
+          origDividendEndCol,
+          ...Object.keys(dividendDigits).map(Number)
+        );
+        // Kolumny: [0 = minus] + [1..finalDividendCols = dzielna] + [colon] + [dzielnik]
+        const colonCol = finalDividendCols + 1;
+        const totalCols = colonCol + divisorDigitsStr.length + 1;
+
+        return {
+          origDividend,
+          origDivisor,
+          shiftedDividend,
+          shiftedDivisor,
+          shiftCount,
+          commaCol,
+          finalDividendCols,
+          colonCol,
+          divisorDigitsStr,
+          totalCols,
+          steps
+        };
+      }
+
+      // =========================================================
+      // RENDEROWANIE KARTKI W KRATKĘ I INTERFEJSU
+      // =========================================================
+
+      function showError(message, invalidField = null) {
+        elDividend.classList.toggle('is-invalid', invalidField === 'dividend' || invalidField === 'both');
+        elDivisor.classList.toggle('is-invalid', invalidField === 'divisor' || invalidField === 'both');
+
+        if (message) {
+          elErrorBox.textContent = message;
+          elErrorBox.classList.add('visible');
+        } else {
+          elErrorBox.textContent = '';
+          elErrorBox.classList.remove('visible');
+        }
+      }
+
+      function renderVisualization() {
+        const model = state.model;
+        if (!model) return;
+
+        const step = model.steps[state.currentStep];
+        const totalSteps = model.steps.length - 1;
+        const {
+          origDividend,
+          origDivisor,
+          shiftedDividend,
+          shiftedDivisor,
+          shiftCount,
+          commaCol,
+          finalDividendCols,
+          colonCol,
+          divisorDigitsStr,
+          totalCols
+        } = model;
+
+        // 1. Odznaka etapu, licznik i pasek postępu
+        elStageBadge.textContent = step.stageLabel;
+        elStageBadge.className = `stage-badge stage-${step.stage}`;
+        elStepCounter.textContent = `Krok ${state.currentStep} z ${totalSteps}`;
+        const pct = totalSteps > 0 ? Math.round((state.currentStep / totalSteps) * 100) : 100;
+        elProgressFill.style.width = `${pct}%`;
+
+        // 2. Baner przesuwania przecinka (gdy dzielnik był ułamkiem)
+        if (shiftCount > 0) {
+          const multStr = '1' + '0'.repeat(shiftCount);
+          elShiftBannerText.innerHTML = `<strong>Przesunięcie przecinka (× ${multStr}):</strong> zamieniliśmy działanie <strong>${origDividend.display} : ${origDivisor.display}</strong> na równoważne dzielenie z liczbą całkowitą w dzielniku: <strong>${shiftedDividend.display} : ${shiftedDivisor.display}</strong>.`;
+          elShiftBanner.classList.add('visible');
+          elShiftBanner.classList.toggle('is-emphasized', step.stage === 'shift');
+        } else {
+          elShiftBanner.classList.remove('visible', 'is-emphasized');
+        }
+
+        // 3. Renderowanie siatki kratkowej
+        elMathGrid.style.gridTemplateColumns = `repeat(${totalCols}, var(--cell-size))`;
+        elMathGrid.innerHTML = '';
+
+        function appendComma(cell, clsList) {
+          const comma = document.createElement('span');
+          comma.className = 'comma-overlay ' + clsList;
+          comma.textContent = ',';
+          cell.appendChild(comma);
+        }
+
+        // --- WIERSZ 0: ILORAZ (WYNIK NAD KRESKĄ) ---
+        for (let c = 0; c < totalCols; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'grid-cell';
+
+          if (c >= 1 && c <= finalDividendCols) {
+            cell.classList.add('cell-quotient', 'has-div-line');
+
+            if (step.activeQuotientCol === c) {
+              cell.classList.add('is-active-quotient');
+            }
+            if (step.periodRange && c >= step.periodRange.startCol && c <= step.periodRange.endCol) {
+              cell.classList.add('is-period-digit');
+              const bar = document.createElement('span');
+              bar.className = 'period-bar';
+              bar.title = 'Cyfra należąca do okresu';
+              cell.appendChild(bar);
+            }
+
+            if (step.quotientDigits[c] !== undefined) {
+              const span = document.createElement('span');
+              span.textContent = step.quotientDigits[c];
+              if (step.activeQuotientCol === c) {
+                span.className = 'digit-pop';
+              }
+              cell.appendChild(span);
+            }
+
+            if (step.showQuotientComma && c === commaCol) {
+              appendComma(cell, step.freshQuotientComma ? 'is-quotient-comma is-fresh-comma' : 'is-quotient-comma');
+            }
+          }
+
+          elMathGrid.appendChild(cell);
+        }
+
+        // --- WIERSZ 1: DZIELNA : DZIELNIK ---
+        for (let c = 0; c < totalCols; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'grid-cell';
+
+          if (c >= 1 && c <= finalDividendCols) {
+            const ch = step.dividendDigits[c];
+            const isAux = step.auxZeroCols.has(c);
+
+            // Podświetlenie częściowej dzielnej (gdy liczymy bezpośrednio z wiersza dzielnej)
+            if (
+              step.partialHighlight &&
+              step.partialHighlight.rowIdx === -1 &&
+              c >= step.partialHighlight.startCol &&
+              c <= step.partialHighlight.endCol
+            ) {
+              cell.classList.add('is-partial-highlight');
+            }
+
+            // Podświetlenie cyfry źródłowej przy spisywaniu
+            if (step.bringInfo && step.bringInfo.col === c) {
+              cell.classList.add('is-bring-highlight');
+            }
+
+            if (ch !== undefined) {
+              if (isAux) {
+                cell.classList.add('cell-aux-zero');
+                const span = document.createElement('span');
+                span.className = 'aux-zero-mark';
+                if (step.bringInfo && step.bringInfo.col === c) {
+                  span.classList.add('digit-pop');
+                }
+                span.textContent = ch;
+                span.title = 'Zero pomocnicze dopisane po przecinku';
+                cell.appendChild(span);
+              } else {
+                cell.textContent = ch;
+              }
+            }
+
+            if (step.showDividendComma && c === commaCol) {
+              appendComma(cell, step.dividendAuxComma ? 'is-aux-comma' : '');
+            }
+          } else if (c === colonCol) {
+            cell.classList.add('cell-colon');
+            cell.textContent = ':';
+          } else if (c > colonCol) {
+            const dIdx = c - colonCol - 1;
+            cell.classList.add('cell-divisor');
+            if (step.activeDivisor) {
+              cell.classList.add('is-active-divisor');
+            }
+            if (dIdx < divisorDigitsStr.length) {
+              cell.textContent = divisorDigitsStr[dIdx];
+            }
+          }
+
+          elMathGrid.appendChild(cell);
+        }
+
+        // --- WIERSZE ROBOCZE (MNOŻENIE / ODEJMOWANIE / RESZTY) ---
+        step.workRows.forEach((wRow, rIdx) => {
+          for (let c = 0; c < totalCols; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+
+            if (wRow.type === 'sub') {
+              cell.classList.add('cell-sub-row');
+              if (step.activeSubRowIdx === rIdx && (wRow.digits[c] !== undefined || wRow.minusCol === c)) {
+                cell.classList.add('is-active-sub');
+              }
+              if (wRow.lineStart !== null && c >= wRow.lineStart && c <= wRow.lineEnd) {
+                cell.classList.add('has-sub-line');
+              }
+
+              if (wRow.minusCol === c) {
+                cell.classList.add('cell-sub-minus');
+                cell.textContent = '−';
+              } else if (wRow.digits[c] !== undefined) {
+                const span = document.createElement('span');
+                span.textContent = wRow.digits[c];
+                if (step.activeSubRowIdx === rIdx) {
+                  span.className = 'digit-pop';
+                }
+                cell.appendChild(span);
+              }
+            } else {
+              // Wiersz reszty ('rem')
+              if (
+                step.partialHighlight &&
+                step.partialHighlight.rowIdx === rIdx &&
+                c >= step.partialHighlight.startCol &&
+                c <= step.partialHighlight.endCol
+              ) {
+                cell.classList.add('is-partial-highlight');
+              }
+
+              const isBroughtCell = step.bringInfo && step.bringInfo.targetRowIdx === rIdx && step.bringInfo.col === c;
+              if (isBroughtCell) {
+                cell.classList.add('is-bring-highlight');
+              }
+
+              if (wRow.digits[c] !== undefined) {
+                const span = document.createElement('span');
+                span.textContent = wRow.digits[c];
+                if (isBroughtCell || (step.stage === 'subtract' && step.partialHighlight && step.partialHighlight.rowIdx === rIdx)) {
+                  span.className = 'digit-pop';
+                }
+                cell.appendChild(span);
+              }
+            }
+
+            // Strzałka spisywania cyfr (jeśli włączona opcja i trwa krok 'bring')
+            if (state.showArrows && step.bringInfo && step.bringInfo.col === c) {
+              if (rIdx < step.bringInfo.targetRowIdx) {
+                const trail = document.createElement('span');
+                trail.className = 'drop-trail';
+                cell.appendChild(trail);
+              } else if (rIdx === step.bringInfo.targetRowIdx) {
+                const head = document.createElement('span');
+                head.className = 'drop-head';
+                head.textContent = '▼';
+                cell.appendChild(head);
+              }
+            }
+
+            elMathGrid.appendChild(cell);
+          }
+        });
+
+        // 4. Karta objaśnień
+        elExplanationCard.className = `explanation-card theme-${step.stage}`;
+        elExplanationTitle.textContent = step.title;
+        elExplanationBody.innerHTML = step.explanationHtml;
+
+        // 5. Stan przycisków nawigacji
+        elBtnStart.disabled = state.currentStep === 0;
+        elBtnPrev.disabled = state.currentStep === 0;
+        elBtnNext.disabled = state.currentStep >= totalSteps;
+        elBtnEnd.disabled = state.currentStep >= totalSteps;
+
+        updatePlayButtonUI();
+      }
+
+      // =========================================================
+      // STEROWANIE ODTWARZANIEM
+      // =========================================================
+
+      function stopAutoPlay() {
+        if (state.playTimer !== null) {
+          clearInterval(state.playTimer);
+          state.playTimer = null;
+        }
+        state.isPlaying = false;
+        updatePlayButtonUI();
+      }
+
+      function updatePlayButtonUI() {
+        if (state.isPlaying) {
+          elBtnPlay.textContent = '❚❚ Pauza';
+          elBtnPlay.classList.add('is-playing');
+        } else {
+          elBtnPlay.textContent = '▶ Odtwórz';
+          elBtnPlay.classList.remove('is-playing');
+        }
+      }
+
+      function advanceOneStep() {
+        if (!state.model) return;
+        const lastIdx = state.model.steps.length - 1;
+        if (state.currentStep < lastIdx) {
+          state.currentStep++;
+          renderVisualization();
+          if (state.currentStep >= lastIdx) {
+            stopAutoPlay();
+          }
+        } else {
+          stopAutoPlay();
+        }
+      }
+
+      function toggleAutoPlay() {
+        if (!state.model) return;
+
+        if (state.isPlaying) {
+          stopAutoPlay();
+          return;
+        }
+
+        if (state.currentStep >= state.model.steps.length - 1) {
+          state.currentStep = 0;
+          renderVisualization();
+        }
+
+        state.isPlaying = true;
+        updatePlayButtonUI();
+        advanceOneStep();
+
+        if (state.isPlaying) {
+          state.playTimer = setInterval(advanceOneStep, SPEED_MAP[state.speedLevel].ms);
+        }
+      }
+
+      function setMode(newMode) {
+        state.mode = newMode;
+        const isDec = newMode === 'decimal';
+        elModeDecimal.classList.toggle('is-active', isDec);
+        elModeDecimal.setAttribute('aria-selected', String(isDec));
+        elModeRemainder.classList.toggle('is-active', !isDec);
+        elModeRemainder.setAttribute('aria-selected', String(!isDec));
+        elPrecisionRow.classList.toggle('is-hidden', !isDec);
+      }
+
+      function handleCalculate() {
+        stopAutoPlay();
+
+        const resA = parseInputNumber(elDividend.value, 'Dzielna', 7);
+        if (!resA.ok) {
+          showError(resA.error, 'dividend');
+          return;
+        }
+
+        const resB = parseInputNumber(elDivisor.value, 'Dzielnik', 5);
+        if (!resB.ok) {
+          showError(resB.error, 'divisor');
+          return;
+        }
+
+        if (resB.value.isZero) {
+          showError('Nie można dzielić przez zero! Wpisz dzielnik większy od zera.', 'divisor');
+          return;
+        }
+
+        showError('');
+        state.model = buildDivisionModel(resA.value, resB.value, {
+          mode: state.mode,
+          maxDecimals: state.maxDecimals,
+          shortZero: state.shortZero
+        });
+        state.currentStep = 0;
+        renderVisualization();
+      }
+
+      // =========================================================
+      // ZDARZENIA (EVENT LISTENERS)
+      // =========================================================
+
+      elBtnCalculate.addEventListener('click', handleCalculate);
+
+      [elDividend, elDivisor].forEach((input) => {
+        input.addEventListener('input', () => {
+          input.classList.remove('is-invalid');
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleCalculate();
+          }
+        });
+      });
+
+      // Przełącznik trybu wyniku
+      elModeDecimal.addEventListener('click', () => {
+        if (state.mode !== 'decimal') {
+          setMode('decimal');
+          handleCalculate();
+        }
+      });
+
+      elModeRemainder.addEventListener('click', () => {
+        if (state.mode !== 'remainder') {
+          setMode('remainder');
+          handleCalculate();
+        }
+      });
+
+      elPrecisionSelect.addEventListener('change', () => {
+        state.maxDecimals = Number(elPrecisionSelect.value);
+        handleCalculate();
+      });
+
+      // Opcje widoku
+      elOptArrows.addEventListener('change', () => {
+        state.showArrows = elOptArrows.checked;
+        renderVisualization();
+      });
+
+      elOptShortZero.addEventListener('change', () => {
+        state.shortZero = elOptShortZero.checked;
+        handleCalculate();
+      });
+
+      // Gotowe przykłady
+      document.querySelectorAll('.btn-preset').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-preset');
+          const p = PRESETS[key];
+          if (p) {
+            elDividend.value = p.a;
+            elDivisor.value = p.b;
+            setMode(p.mode);
+            handleCalculate();
+          }
+        });
+      });
+
+      // Pasek sterowania
+      elBtnStart.addEventListener('click', () => {
+        stopAutoPlay();
+        state.currentStep = 0;
+        renderVisualization();
+      });
+
+      elBtnPrev.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.currentStep > 0) {
+          state.currentStep--;
+          renderVisualization();
+        }
+      });
+
+      elBtnPlay.addEventListener('click', toggleAutoPlay);
+
+      elBtnNext.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.model && state.currentStep < state.model.steps.length - 1) {
+          state.currentStep++;
+          renderVisualization();
+        }
+      });
+
+      elBtnEnd.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.model) {
+          state.currentStep = state.model.steps.length - 1;
+          renderVisualization();
+        }
+      });
+
+      // Suwak tempa
+      elSpeedSlider.addEventListener('input', () => {
+        state.speedLevel = Number(elSpeedSlider.value);
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        if (state.isPlaying) {
+          stopAutoPlay();
+          toggleAutoPlay();
+        }
+      });
+
+      // Skróty klawiszowe (←, →, Spacja)
+      document.addEventListener('keydown', (e) => {
+        const tag = document.activeElement ? document.activeElement.tagName : '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+          return;
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          elBtnNext.click();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          elBtnPrev.click();
+        } else if (e.code === 'Space') {
+          e.preventDefault();
+          toggleAutoPlay();
+        }
+      });
+
+      // Inicjalizacja aplikacji
+      window.addEventListener('load', () => {
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        handleCalculate();
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,3396 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator wyznaczania NWW (Najmniejszej Wspólnej Wielokrotności)</title>
+  <style>
+    /* =========================================================
+       ZMIENNE KOLORYSTYCZNE I TYPOGRAFIA (100% OFFLINE)
+       ========================================================= */
+    :root {
+      --bg-page: #f4f6fb;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-soft: #e2e8f0;
+
+      /* Kolory dydaktyczne */
+      --blue: #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-bg: #eff6ff;
+      --blue-border: #bfdbfe;
+      --blue-dark: #1e3a8a;
+
+      --green: #16a34a;
+      --green-bg: #dcfce7;
+      --green-border: #86efac;
+      --green-dark: #14532d;
+
+      --purple: #7c3aed;
+      --purple-bg: #f3e8ff;
+      --purple-border: #d8b4fe;
+      --purple-dark: #4c1d95;
+
+      --amber: #d97706;
+      --amber-bg: #fef3c7;
+      --amber-border: #fcd34d;
+      --amber-dark: #92400e;
+
+      --error-bg: #fef2f2;
+      --error-border: #fca5a5;
+      --error-text: #991b1b;
+
+      /* Kartka w kratkę z zeszytu */
+      --paper-bg: #fffef9;
+      --paper-grid: #d4e4f4;
+      --paper-margin: #fca5a5;
+      --grid-step: 26px;
+
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 20px 16px 48px;
+    }
+
+    /* =========================================================
+       UKŁAD GŁÓWNY I NAGŁÓWEK
+       ========================================================= */
+    .app-wrapper {
+      max-width: 1220px;
+      margin: 0 auto;
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .app-title-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .app-logo {
+      width: 46px;
+      height: 46px;
+      background: linear-gradient(135deg, #2563eb, #16a34a);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.92rem;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      flex-shrink: 0;
+    }
+
+    .app-header h1 {
+      font-size: clamp(1.35rem, 3vw, 1.95rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .app-subtitle {
+      color: var(--text-muted);
+      font-size: 0.96rem;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 365px 1fr;
+      gap: 22px;
+      align-items: start;
+      margin-bottom: 22px;
+    }
+
+    @media (max-width: 980px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* =========================================================
+       KARTY (PANELE)
+       ========================================================= */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-md);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 1.04rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text-main);
+    }
+
+    /* =========================================================
+       LEWY PANEL: DANE WEJŚCIOWE I PRZYKŁADY
+       ========================================================= */
+    .inputs-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .input-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .input-sub {
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .input-with-btn {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .number-input {
+      width: 100%;
+      padding: 10px 13px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      background: #f8fafc;
+      border: 2px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .number-input:focus {
+      outline: none;
+      border-color: var(--blue);
+      background: #ffffff;
+    }
+
+    .number-input.is-invalid {
+      border-color: #dc2626;
+      background: var(--error-bg);
+    }
+
+    .btn-toggle-third {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1.5px dashed #cbd5e1;
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+      margin-bottom: 12px;
+    }
+
+    .btn-toggle-third:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: var(--blue-bg);
+    }
+
+    .btn-toggle-third.is-remove {
+      border-style: solid;
+      border-color: #fecaca;
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .btn-toggle-third.is-remove:hover {
+      background: #fee2e2;
+      border-color: #f87171;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.93rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #ffffff;
+      flex: 1;
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.24);
+    }
+
+    .btn-primary:hover {
+      background: var(--blue-hover);
+    }
+
+    .btn-secondary {
+      background: #f8fafc;
+      color: var(--text-main);
+      border-color: #cbd5e1;
+    }
+
+    .btn-secondary:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .error-box {
+      display: none;
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      border-left: 4px solid #dc2626;
+      color: var(--error-text);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.86rem;
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+
+    .error-box.visible {
+      display: block;
+    }
+
+    .presets-label {
+      font-size: 0.77rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .btn-preset {
+      background: var(--blue-bg);
+      color: var(--blue);
+      border: 1px solid var(--blue-border);
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 1px;
+      font-family: var(--font-sans);
+    }
+
+    .btn-preset strong {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.86rem;
+      color: var(--blue-dark);
+    }
+
+    .btn-preset span {
+      font-size: 0.7rem;
+      color: #3b82f6;
+      line-height: 1.15;
+    }
+
+    .btn-preset:hover {
+      background: #dbeafe;
+      transform: translateY(-1px);
+    }
+
+    .options-box {
+      border-top: 1px solid var(--border-soft);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      line-height: 1.35;
+    }
+
+    .toggle-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      accent-color: var(--blue);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* =========================================================
+       PRAWY PANEL: ZAKŁADKI, POSTĘP, KARTKA W KRATKĘ
+       ========================================================= */
+    .viz-top-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .method-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-soft);
+      gap: 4px;
+    }
+
+    .method-tab {
+      padding: 7px 12px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.83rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .method-tab:hover {
+      color: var(--text-main);
+    }
+
+    .method-tab.is-active {
+      background: #ffffff;
+      color: var(--blue);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .badges-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stage-badge {
+      display: inline-flex;
+      align-items: center;
+      font-weight: 800;
+      font-size: 0.77rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border: 1px solid transparent;
+    }
+
+    .stage-start { background: var(--blue-bg); color: var(--blue-dark); border-color: var(--blue-border); }
+    .stage-factor { background: var(--amber-bg); color: var(--amber-dark); border-color: var(--amber-border); }
+    .stage-select { background: var(--green-bg); color: var(--green-dark); border-color: var(--green-border); }
+    .stage-multiply { background: var(--purple-bg); color: var(--purple-dark); border-color: var(--purple-border); }
+    .stage-multiples { background: var(--amber-bg); color: var(--amber-dark); border-color: var(--amber-border); }
+    .stage-done { background: var(--green-bg); color: var(--green-dark); border-color: var(--green-border); }
+
+    .step-counter {
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb, #16a34a);
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    /* Kartka w kratkę z zeszytu */
+    .notebook-shell {
+      position: relative;
+      background-color: var(--paper-bg);
+      background-image:
+        linear-gradient(to right, var(--paper-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--paper-grid) 1px, transparent 1px);
+      background-size: var(--grid-step) var(--grid-step);
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.05), var(--shadow-sm);
+      overflow-x: auto;
+      padding: 24px 22px 26px 46px;
+      margin-bottom: 16px;
+      min-height: 295px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+
+    .notebook-shell::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 28px;
+      width: 2px;
+      background-color: var(--paper-margin);
+      opacity: 0.72;
+      pointer-events: none;
+    }
+
+    /* =========================================================
+       METODA 1: ROZKŁAD NA CZYNNIKI (OSOBNO)
+       ========================================================= */
+    .sep-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .sep-tables-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 24px;
+      width: 100%;
+    }
+
+    .mini-factor-card {
+      background: rgba(255, 255, 255, 0.86);
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      min-width: 175px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .mini-factor-card.is-active-card {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+    }
+
+    .mini-card-head {
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .mini-bar-grid {
+      display: grid;
+      grid-template-columns: minmax(64px, auto) 3px minmax(48px, auto);
+      align-items: center;
+      row-gap: 3px;
+      justify-content: center;
+    }
+
+    .mb-left {
+      text-align: right;
+      padding: 3px 10px 3px 6px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--blue-dark);
+      border-radius: 6px;
+    }
+
+    .mb-left.is-active {
+      background: var(--amber-bg);
+      color: var(--amber-dark);
+      box-shadow: inset 0 0 0 2px var(--amber-border);
+    }
+
+    .mb-left.is-one {
+      color: var(--green-dark);
+    }
+
+    .mb-left.is-one span {
+      display: inline-block;
+      padding: 0 7px;
+      border-radius: 6px;
+      background: var(--green-bg);
+      border: 1.5px dashed var(--green);
+    }
+
+    .mb-line {
+      width: 3px;
+      align-self: stretch;
+      background: #0f172a;
+      min-height: 32px;
+      border-radius: 2px;
+    }
+
+    .mb-right {
+      padding: 3px 6px 3px 10px;
+      display: flex;
+      align-items: center;
+      min-height: 32px;
+    }
+
+    .mb-factor {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 30px;
+      height: 30px;
+      padding: 0 7px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.05rem;
+      font-weight: 800;
+      background: var(--green-bg);
+      color: var(--green-dark);
+      border: 1.5px solid var(--green-border);
+    }
+
+    .mb-factor.is-active {
+      background: var(--green);
+      color: #ffffff;
+      border-color: var(--green-dark);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+      animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .mb-dash {
+      color: #94a3b8;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .mini-div-bubble {
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .div-pill {
+      display: inline-flex;
+      align-items: center;
+      background: var(--amber-bg);
+      border: 1.5px solid var(--amber-border);
+      color: var(--amber-dark);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.82rem;
+      font-weight: 800;
+      padding: 3px 9px;
+      border-radius: 999px;
+      animation: popIn 0.25s ease;
+    }
+
+    /* Sekcja wyboru czynników (poziome rozkłady) */
+    .select-box {
+      width: 100%;
+      max-width: 680px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 2px solid var(--blue-border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .select-box-title {
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+
+    .horiz-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .horiz-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .horiz-num {
+      min-width: 72px;
+      text-align: right;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--blue-dark);
+      margin-right: 4px;
+    }
+
+    .ftile {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      height: 32px;
+      padding: 0 8px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 800;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1.5px solid #cbd5e1;
+      transition: all 0.22s ease;
+    }
+
+    .ftile.is-chosen {
+      background: var(--green-bg);
+      color: var(--green-dark);
+      border-color: var(--green);
+      box-shadow: 0 2px 5px rgba(22, 163, 74, 0.16);
+    }
+
+    .ftile.is-chosen-now {
+      background: var(--green);
+      color: #ffffff;
+      border-color: var(--green-dark);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.28);
+      animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .ftile.is-crossed {
+      background: #f1f5f9;
+      color: #94a3b8;
+      border-color: #e2e8f0;
+      text-decoration: line-through;
+      text-decoration-color: #dc2626;
+      text-decoration-thickness: 2.5px;
+      opacity: 0.7;
+    }
+
+    .ftile.is-crossed-now {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fca5a5;
+      text-decoration: line-through;
+      text-decoration-color: #dc2626;
+      text-decoration-thickness: 2.5px;
+    }
+
+    .dot-op {
+      font-weight: 900;
+      color: #94a3b8;
+      user-select: none;
+    }
+
+    /* Pasek mnożenia końcowego NWW (wspólny dla Metody 1 i Metody 2) */
+    .mul-strip {
+      width: 100%;
+      max-width: 680px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 2px solid var(--purple-border);
+      border-radius: var(--radius-md);
+      padding: 13px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .mul-strip.is-done {
+      border-color: var(--green);
+      background: #f0fdf4;
+    }
+
+    .mul-strip-label {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--purple);
+    }
+
+    .mul-strip.is-done .mul-strip-label {
+      color: var(--green-dark);
+    }
+
+    .mul-eq-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .mul-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 9px;
+      border-radius: 7px;
+      background: var(--green-bg);
+      color: var(--green-dark);
+      border: 1.5px solid var(--green-border);
+    }
+
+    .mul-chip.is-used {
+      background: var(--purple-bg);
+      color: var(--purple-dark);
+      border-color: var(--purple-border);
+    }
+
+    .mul-chip.is-current {
+      background: var(--purple);
+      color: #ffffff;
+      border-color: var(--purple-dark);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25);
+      animation: popIn 0.28s ease;
+    }
+
+    .mul-running {
+      padding: 3px 11px;
+      border-radius: 8px;
+      background: var(--purple-bg);
+      color: var(--purple-dark);
+      border: 1.5px solid var(--purple);
+      font-size: 1.15rem;
+    }
+
+    .mul-strip.is-done .mul-running {
+      background: var(--green);
+      color: #ffffff;
+      border-color: var(--green-dark);
+      box-shadow: 0 3px 10px rgba(22, 163, 74, 0.28);
+    }
+
+    /* =========================================================
+       METODA 2: WSPÓLNA TABELA (SZYBKA METODA)
+       ========================================================= */
+    .shared-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .shared-table-card {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      overflow-x: auto;
+      max-width: 100%;
+    }
+
+    .shared-grid {
+      display: grid;
+      align-items: center;
+      row-gap: 4px;
+    }
+
+    .sg-cell {
+      text-align: center;
+      padding: 5px 12px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.32rem;
+      font-weight: 800;
+      color: var(--blue-dark);
+      border-radius: 7px;
+      min-width: 68px;
+      transition: all 0.2s ease;
+    }
+
+    .sg-cell.is-divisible-active {
+      background: var(--amber-bg);
+      color: var(--amber-dark);
+      box-shadow: inset 0 0 0 2px var(--amber-border);
+    }
+
+    .sg-cell.is-carried {
+      color: #94a3b8;
+      font-style: italic;
+      font-weight: 600;
+    }
+
+    .sg-cell.is-one {
+      color: var(--green-dark);
+    }
+
+    .sg-cell.is-one span {
+      display: inline-block;
+      padding: 0 7px;
+      border-radius: 6px;
+      background: var(--green-bg);
+      border: 1.5px dashed var(--green);
+    }
+
+    .sg-cell.is-new-val {
+      animation: popIn 0.26s ease;
+    }
+
+    .sg-sep {
+      width: 4px;
+      align-self: stretch;
+      background: #0f172a;
+      border-radius: 2px;
+      min-height: 38px;
+      margin: 0 4px;
+    }
+
+    .sg-factor-cell {
+      padding: 4px 10px 4px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+    }
+
+    .sg-factor-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      height: 36px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.2rem;
+      font-weight: 800;
+      background: var(--green-bg);
+      color: var(--green-dark);
+      border: 2px solid var(--green-border);
+      transition: all 0.2s ease;
+    }
+
+    .sg-factor-badge.is-active {
+      background: var(--green);
+      color: #ffffff;
+      border-color: var(--green-dark);
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.24);
+      animation: popIn 0.28s ease;
+    }
+
+    .sg-factor-badge.is-mul-highlight {
+      background: var(--purple);
+      color: #ffffff;
+      border-color: var(--purple-dark);
+      box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.24);
+    }
+
+    .sg-factor-badge.is-all-highlight {
+      background: var(--green);
+      color: #ffffff;
+      border-color: var(--green-dark);
+    }
+
+    /* =========================================================
+       METODA 3: WYPISYWANIE WIELOKROTNOŚCI
+       ========================================================= */
+    .mult-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .mult-row-card {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.2s;
+    }
+
+    .mult-row-card.is-active-row {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .mult-row-card.is-matched-row {
+      border-color: var(--green);
+      background: #f0fdf4;
+    }
+
+    .mult-row-head {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.96rem;
+      font-weight: 800;
+      color: var(--blue-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mult-row-sub {
+      font-family: var(--font-sans);
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .mult-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .mult-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1rem;
+      font-weight: 800;
+      background: #f1f5f9;
+      color: #1e293b;
+      border: 1.5px solid #cbd5e1;
+    }
+
+    .mult-pill.is-new {
+      background: var(--amber-bg);
+      color: var(--amber-dark);
+      border-color: var(--amber);
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.22);
+      animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .mult-pill.is-lcm {
+      background: var(--green);
+      color: #ffffff;
+      border-color: var(--green-dark);
+      box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.28);
+      transform: scale(1.06);
+      animation: popIn 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .mult-dots {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      color: #94a3b8;
+      padding: 0 4px;
+    }
+
+    .mult-limit-banner {
+      background: var(--amber-bg);
+      border: 1.5px solid var(--amber-border);
+      border-left: 5px solid var(--amber);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      color: var(--amber-dark);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .mult-limit-banner h3 {
+      font-size: 0.96rem;
+      font-weight: 800;
+    }
+
+    .mult-limit-banner p {
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .btn-switch-method {
+      align-self: flex-start;
+      padding: 9px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--blue);
+      color: #ffffff;
+      border: none;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      transition: background-color 0.15s;
+    }
+
+    .btn-switch-method:hover {
+      background: var(--blue-hover);
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* =========================================================
+       PANEL WYJAŚNIENIA DYDAKTYCZNEGO
+       ========================================================= */
+    .explanation-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid var(--blue);
+      border-radius: var(--radius-md);
+      padding: 15px 18px;
+      margin-bottom: 16px;
+      min-height: 102px;
+      transition: border-left-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .explanation-card.theme-factor,
+    .explanation-card.theme-multiples {
+      background: #fffbeb;
+      border-color: #fde68a;
+      border-left-color: var(--amber);
+    }
+
+    .explanation-card.theme-select,
+    .explanation-card.theme-done {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      border-left-color: var(--green);
+    }
+
+    .explanation-card.theme-multiply {
+      background: #faf5ff;
+      border-color: #e9d5ff;
+      border-left-color: var(--purple);
+    }
+
+    .explanation-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--blue);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .explanation-card.theme-factor .explanation-title,
+    .explanation-card.theme-multiples .explanation-title { color: var(--amber-dark); }
+    .explanation-card.theme-select .explanation-title,
+    .explanation-card.theme-done .explanation-title { color: var(--green-dark); }
+    .explanation-card.theme-multiply .explanation-title { color: var(--purple-dark); }
+
+    .explanation-body {
+      font-size: 0.98rem;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    .chip {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-size: 0.95em;
+    }
+
+    .chip-blue { background: var(--blue-bg); color: var(--blue-dark); }
+    .chip-green { background: var(--green-bg); color: var(--green-dark); }
+    .chip-purple { background: var(--purple-bg); color: var(--purple-dark); }
+    .chip-amber { background: var(--amber-bg); color: var(--amber-dark); }
+    .chip-num { background: #e2e8f0; color: #0f172a; }
+
+    /* =========================================================
+       STEROWANIE KROKAMI I SUWAK TEMPA
+       ========================================================= */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .btn-ctrl {
+      padding: 10px 13px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-ctrl:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }
+
+    .btn-ctrl:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ctrl-primary {
+      background: var(--blue);
+      color: #ffffff;
+      border-color: var(--blue);
+    }
+
+    .btn-ctrl-primary:hover:not(:disabled) {
+      background: var(--blue-hover);
+      border-color: var(--blue-hover);
+    }
+
+    .btn-ctrl-play {
+      background: #0f766e;
+      color: #ffffff;
+      border-color: #0f766e;
+      min-width: 126px;
+    }
+
+    .btn-ctrl-play:hover:not(:disabled) {
+      background: #115e59;
+      border-color: #115e59;
+    }
+
+    .btn-ctrl-play.is-playing {
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+
+    .btn-ctrl-play.is-playing:hover:not(:disabled) {
+      background: #b45309;
+      border-color: #b45309;
+    }
+
+    .speed-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+    }
+
+    .speed-slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .speed-slider {
+      width: 130px;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    .speed-label-pill {
+      min-width: 68px;
+      text-align: center;
+      background: #e2e8f0;
+      color: var(--text-main);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .shortcuts-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    /* =========================================================
+       KARTA PODSUMOWANIA I DODATKI EDUKACYJNE
+       ========================================================= */
+    .bottom-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .summary-card {
+      border-top: 4px solid var(--green);
+    }
+
+    .final-formula-banner {
+      background: #f0fdf4;
+      border: 2px solid var(--green-border);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(1.05rem, 2.2vw, 1.32rem);
+      font-weight: 800;
+      color: var(--green-dark);
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    .final-formula-banner sup {
+      font-size: 0.7em;
+      vertical-align: super;
+      line-height: 0;
+    }
+
+    .final-lcm-highlight {
+      display: inline-block;
+      background: var(--green);
+      color: #ffffff;
+      padding: 2px 10px;
+      border-radius: 8px;
+      margin-left: 2px;
+    }
+
+    .edu-addons-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 820px) {
+      .edu-addons-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .addon-tile {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+    }
+
+    .addon-title {
+      font-size: 0.84rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--blue);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .addon-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.45;
+    }
+
+    /* Wizualizacja ułamków z kreską ułamkową */
+    .fractions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .frac-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      background: #ffffff;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .frac {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.1;
+      font-weight: 800;
+      font-size: 0.98rem;
+      vertical-align: middle;
+    }
+
+    .frac-num {
+      padding: 0 5px 2px;
+      border-bottom: 2px solid #0f172a;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    .frac-den {
+      padding: 2px 5px 0;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    .frac.is-expanded .frac-num,
+    .frac.is-expanded .frac-den {
+      color: var(--green-dark);
+      border-color: var(--green-dark);
+    }
+
+    .frac-expand-badge {
+      font-family: var(--font-sans);
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: var(--purple-bg);
+      color: var(--purple-dark);
+      padding: 3px 9px;
+      border-radius: 999px;
+      margin-left: auto;
+    }
+
+    /* Sekcja NWD */
+    .nwd-main-val {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+
+    .nwd-formula-box {
+      background: #ffffff;
+      border: 1px solid var(--purple-border);
+      border-left: 4px solid var(--purple);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
+    .nwd-formula-math {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      color: var(--purple-dark);
+      margin-top: 4px;
+      word-break: break-word;
+    }
+
+    /* Rozwijana ściągawka (<details>) */
+    .edu-details {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .edu-details summary {
+      padding: 13px 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      transition: background-color 0.15s;
+    }
+
+    .edu-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .edu-details summary:hover {
+      background: #f1f5f9;
+    }
+
+    .edu-details summary::after {
+      content: "▾";
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+
+    .edu-details[open] summary::after {
+      transform: rotate(180deg);
+    }
+
+    .edu-details-body {
+      padding: 16px 18px 20px;
+      border-top: 1px solid var(--border-soft);
+      background: #ffffff;
+    }
+
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 820px) {
+      .cheat-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .cheat-h3 {
+      font-size: 0.88rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+
+    .cheat-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .cheat-list li {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .shortcut-box {
+      background: #f0fdf4;
+      border: 1px solid var(--green-border);
+      border-left: 4px solid var(--green);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .shortcut-box:last-child {
+      margin-bottom: 0;
+    }
+
+    /* =========================================================
+       RESPONSYWNOŚĆ (TELEFON / TABLET)
+       ========================================================= */
+    @media (max-width: 600px) {
+      body {
+        padding: 14px 10px 34px;
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .notebook-shell {
+        padding: 18px 12px 20px 32px;
+        min-height: 240px;
+      }
+
+      .notebook-shell::before {
+        left: 18px;
+      }
+
+      .method-tabs {
+        width: 100%;
+        flex-direction: column;
+      }
+
+      .method-tab {
+        width: 100%;
+        text-align: center;
+      }
+
+      .controls-bar {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      #btn-end {
+        grid-column: span 2;
+      }
+
+      .shortcuts-hint {
+        display: none;
+      }
+    }
+  
+    /* =========================================================
+       PRZYCISK POWROTU DO MENU GŁÓWNEGO
+       ========================================================= */
+    .top-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .btn-back-menu {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 15px;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #1e293b;
+      border: 1.5px solid #cbd5e1;
+      text-decoration: none;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-back-menu:hover,
+    .btn-back-menu:focus-visible {
+      background: #eff6ff;
+      border-color: #2563eb;
+      color: #2563eb;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <nav class="top-nav-bar" aria-label="Nawigacja główna">
+      <a href="index.html" class="btn-back-menu" title="Wróć do menu głównego">← Menu</a>
+    </nav>
+
+    <!-- NAGŁÓWEK -->
+    <header class="app-header">
+      <div class="app-title-row">
+        <div class="app-logo" aria-hidden="true">NWW</div>
+        <h1>Kalkulator wyznaczania NWW</h1>
+      </div>
+      <p class="app-subtitle">Najmniejsza Wspólna Wielokrotność krok po kroku — poznaj trzy szkolne metody (rozkład na czynniki, wspólna tabela, wielokrotności) oraz zastosowanie w ułamkach.</p>
+    </header>
+
+    <main class="main-grid">
+      <!-- LEWY PANEL: DANE WEJŚCIOWE I PRZYKŁADY -->
+      <section class="card" aria-label="Wprowadzanie liczb">
+        <h2 class="card-title">1. Wpisz liczby naturalne</h2>
+
+        <div class="inputs-stack">
+          <div class="input-group">
+            <label class="input-label-row" for="input-n1">
+              <span>Pierwsza liczba</span>
+              <span class="input-sub">1 – 10 000</span>
+            </label>
+            <input type="text" id="input-n1" class="number-input" inputmode="numeric" value="12" placeholder="np. 12" autocomplete="off">
+          </div>
+
+          <div class="input-group">
+            <label class="input-label-row" for="input-n2">
+              <span>Druga liczba</span>
+              <span class="input-sub">1 – 10 000</span>
+            </label>
+            <input type="text" id="input-n2" class="number-input" inputmode="numeric" value="18" placeholder="np. 18" autocomplete="off">
+          </div>
+
+          <div id="group-n3" class="input-group" style="display: none;">
+            <label class="input-label-row" for="input-n3">
+              <span>Trzecia liczba</span>
+              <span class="input-sub">1 – 10 000</span>
+            </label>
+            <input type="text" id="input-n3" class="number-input" inputmode="numeric" value="" placeholder="np. 24" autocomplete="off">
+          </div>
+        </div>
+
+        <button type="button" id="btn-toggle-third" class="btn-toggle-third">+ Dodaj 3. liczbę</button>
+
+        <div class="action-row">
+          <button type="button" id="btn-calc" class="btn btn-primary">Wyznacz NWW</button>
+          <button type="button" id="btn-random" class="btn btn-secondary" title="Wylosuj ciekawy zestaw liczb">🎲 Losuj</button>
+        </div>
+
+        <div id="error-box" class="error-box" role="alert"></div>
+
+        <div class="presets-label">Gotowe przykłady edukacyjne:</div>
+        <div class="presets-grid">
+          <button type="button" class="btn-preset" data-nums="12,18">
+            <strong>12 i 18</strong>
+            <span>klasyczny</span>
+          </button>
+          <button type="button" class="btn-preset" data-nums="8,12">
+            <strong>8 i 12</strong>
+            <span>prosty</span>
+          </button>
+          <button type="button" class="btn-preset" data-nums="6,8,12">
+            <strong>6, 8 i 12</strong>
+            <span>3 liczby</span>
+          </button>
+          <button type="button" class="btn-preset" data-nums="7,9">
+            <strong>7 i 9</strong>
+            <span>względnie pierwsze</span>
+          </button>
+          <button type="button" class="btn-preset" data-nums="15,45">
+            <strong>15 i 45</strong>
+            <span>jedna dzieli drugą</span>
+          </button>
+          <button type="button" class="btn-preset" data-nums="24,36">
+            <strong>24 i 36</strong>
+            <span>większy rozkład</span>
+          </button>
+        </div>
+
+        <div class="options-box">
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-powers" checked>
+            <span>Pokaż zapis potęgowy</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-divisibility" checked>
+            <span>Podpowiedzi cech podzielności</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- PRAWY PANEL: WIZUALIZACJA W ZESZYCIE I STEROWANIE -->
+      <section class="card" aria-label="Wizualizacja wyznaczania NWW">
+        <div class="viz-top-row">
+          <div class="method-tabs" role="tablist" aria-label="Wybór metody wyznaczania NWW">
+            <button type="button" id="tab-separate" class="method-tab is-active" role="tab" aria-selected="true">Rozkład na czynniki (osobno)</button>
+            <button type="button" id="tab-table" class="method-tab" role="tab" aria-selected="false">Wspólna tabela (szybka metoda)</button>
+            <button type="button" id="tab-multiples" class="method-tab" role="tab" aria-selected="false">Wypisywanie wielokrotności</button>
+          </div>
+          <div class="badges-group">
+            <span id="stage-badge" class="stage-badge stage-start">Start</span>
+            <span id="step-counter" class="step-counter">Krok 0 / 0</span>
+          </div>
+        </div>
+
+        <!-- PASEK POSTĘPU -->
+        <div class="progress-track" aria-hidden="true">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+
+        <!-- KARTKA W KRATKĘ -->
+        <div class="notebook-shell">
+          <div id="viz-container" style="width: 100%;" aria-live="polite"></div>
+        </div>
+
+        <!-- PANEL WYJAŚNIENIA SŁOWNEGO -->
+        <div id="explanation-card" class="explanation-card">
+          <div id="explanation-title" class="explanation-title">Start</div>
+          <div id="explanation-body" class="explanation-body"></div>
+        </div>
+
+        <!-- PRZYCISKI STEROWANIA -->
+        <div class="controls-bar">
+          <button type="button" id="btn-start" class="btn-ctrl" title="Wróć na początek">⏮ Początek</button>
+          <button type="button" id="btn-prev" class="btn-ctrl" title="Poprzedni krok (Strzałka w lewo)">◀ Wstecz</button>
+          <button type="button" id="btn-play" class="btn-ctrl btn-ctrl-play" title="Odtwarzaj / Pauza (Spacja)">▶ Odtwarzaj</button>
+          <button type="button" id="btn-next" class="btn-ctrl btn-ctrl-primary" title="Następny krok (Strzałka w prawo)">Dalej ▶</button>
+          <button type="button" id="btn-end" class="btn-ctrl" title="Przejdź do końca">⏭ Koniec</button>
+        </div>
+
+        <!-- SUWAK TEMPA I SKRÓTY -->
+        <div class="speed-row">
+          <label class="speed-slider-wrap" for="speed-slider">
+            <span>Tempo animacji:</span>
+            <input type="range" id="speed-slider" class="speed-slider" min="1" max="3" step="1" value="2">
+            <span id="speed-label" class="speed-label-pill">Średnio</span>
+          </label>
+          <div class="shortcuts-hint">
+            Skróty: <span class="kbd">←</span> <span class="kbd">→</span> krok, <span class="kbd">Spacja</span> odtwarzaj/pauza
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- DOLNE SEKCJE: PODSUMOWANIE I ŚCIĄGAWKA -->
+    <div class="bottom-stack">
+      <!-- KARTA PODSUMOWANIA I DODATKI -->
+      <section class="card summary-card" aria-label="Podsumowanie wyniku NWW">
+        <h2 class="card-title">Podsumowanie wyniku i zastosowania</h2>
+
+        <div id="final-formula-banner" class="final-formula-banner"></div>
+
+        <div class="edu-addons-grid">
+          <!-- ZASTOSOWANIE W UŁAMKACH -->
+          <div class="addon-tile">
+            <div class="addon-title">🍰 Zastosowanie w ułamkach (wspólny mianownik)</div>
+            <p id="frac-desc" class="addon-desc"></p>
+            <div id="fractions-list" class="fractions-list"></div>
+          </div>
+
+          <!-- POWIĄZANIE Z NWD -->
+          <div class="addon-tile">
+            <div class="addon-title">🔗 Powiązanie z NWD</div>
+            <div id="nwd-main-val" class="nwd-main-val"></div>
+            <div id="nwd-formula-box" class="nwd-formula-box"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ŚCIĄGAWKA EDUKACYJNA -->
+      <section class="card" aria-label="Ściągawka matematyczna">
+        <details class="edu-details">
+          <summary>📘 Ściągawka: Jak wyznaczać NWW?</summary>
+          <div class="edu-details-body">
+            <div class="cheat-grid">
+              <div>
+                <h3 class="cheat-h3">3 szkolne metody wyznaczania NWW</h3>
+                <ul class="cheat-list">
+                  <li><strong>1. Rozkład na czynniki (osobno):</strong> Rozkładamy każdą liczbę na czynniki pierwsze. Do NWW bierzemy każdą występującą liczbę pierwszą <em>tyle razy, ile maksymalnie wystąpiła w jednej z liczb</em>, a potem wszystko mnożymy.</li>
+                  <li><strong>2. Wspólna tabela (szybka metoda):</strong> Zapisujemy liczby obok siebie przed pionową kreską i dzielimy przez kolejne liczby pierwsze te, które się dzielą (pozostałe przepisujemy). Gdy dojdziemy do samych jedynek, mnożymy wszystkie czynniki z prawej kolumny.</li>
+                  <li><strong>3. Wypisywanie wielokrotności:</strong> Wypisujemy kolejne wielokrotności każdej liczby (np. 12, 24, 36...). Pierwsza liczba, która pojawi się we wszystkich wierszach, to NWW. Najlepsza dla małych liczb!</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 class="cheat-h3">2 sprytne skróty (bez liczenia w słupku!)</h3>
+                <div class="shortcut-box">
+                  <strong>⚡ Skrót 1 — Jedna liczba dzieli drugą:</strong><br>
+                  Jeśli większa liczba dzieli się przez mniejszą bez reszty, to <strong>NWW jest po prostu tą większą liczbą!</strong><br>
+                  <em>Przykład:</em> 45 dzieli się przez 15, więc <strong>NWW(15, 45) = 45</strong>.
+                </div>
+                <div class="shortcut-box">
+                  <strong>⚡ Skrót 2 — Liczby względnie pierwsze (NWD = 1):</strong><br>
+                  Jeśli liczby nie mają żadnych wspólnych dzielników poza 1, to <strong>NWW jest ich iloczynem!</strong><br>
+                  <em>Przykład:</em> 7 i 9 mają NWD = 1, więc <strong>NWW(7, 9) = 7 · 9 = 63</strong>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * KALKULATOR WYZNACZANIA NWW (NAJMNIEJSZEJ WSPÓLNEJ WIELOKROTNOŚCI)
+     * 100% offline, bez zewnętrznych zależności, dokładna arytmetyka BigInt dla NWW i iloczynów.
+     */
+    (function () {
+      'use strict';
+
+      // =========================================================
+      // STAŁE I KONFIGURACJA
+      // =========================================================
+      const SPEED_MAP = {
+        1: { label: 'Wolno', ms: 2300 },
+        2: { label: 'Średnio', ms: 1400 },
+        3: { label: 'Szybko', ms: 720 }
+      };
+
+      const RANDOM_SETS_2 = [
+        [8, 12], [10, 15], [12, 16], [12, 18], [14, 21], [15, 20],
+        [15, 25], [16, 24], [18, 24], [18, 30], [20, 28], [20, 30],
+        [24, 36], [24, 40], [28, 42], [30, 45], [32, 48], [36, 48],
+        [9, 12], [6, 15], [14, 35], [15, 45], [7, 9], [8, 15]
+      ];
+
+      const RANDOM_SETS_3 = [
+        [4, 6, 8], [6, 8, 12], [6, 9, 12], [8, 12, 16], [6, 10, 15],
+        [9, 12, 18], [10, 15, 20], [12, 15, 20], [12, 18, 24], [8, 10, 12],
+        [4, 9, 12], [6, 12, 18], [10, 12, 15], [15, 20, 30]
+      ];
+
+      const SMALL_PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29];
+
+      // =========================================================
+      // STAN APLIKACJI
+      // =========================================================
+      const state = {
+        hasThird: false,
+        activeTab: 'separate', // 'separate' | 'table' | 'multiples'
+        showPowers: true,
+        showDivisibility: true,
+        model: null,
+        currentStep: 0,
+        isPlaying: false,
+        playTimer: null,
+        speedLevel: 2
+      };
+
+      // =========================================================
+      // REFERENCJE DO ELEMENTÓW DOM
+      // =========================================================
+      const elN1 = document.getElementById('input-n1');
+      const elN2 = document.getElementById('input-n2');
+      const elN3 = document.getElementById('input-n3');
+      const elGroupN3 = document.getElementById('group-n3');
+      const elBtnToggleThird = document.getElementById('btn-toggle-third');
+      const elBtnCalc = document.getElementById('btn-calc');
+      const elBtnRandom = document.getElementById('btn-random');
+      const elErrorBox = document.getElementById('error-box');
+      const elOptPowers = document.getElementById('opt-powers');
+      const elOptDivisibility = document.getElementById('opt-divisibility');
+
+      const elTabSeparate = document.getElementById('tab-separate');
+      const elTabTable = document.getElementById('tab-table');
+      const elTabMultiples = document.getElementById('tab-multiples');
+      const elStageBadge = document.getElementById('stage-badge');
+      const elStepCounter = document.getElementById('step-counter');
+      const elProgressFill = document.getElementById('progress-fill');
+      const elVizContainer = document.getElementById('viz-container');
+
+      const elExplanationCard = document.getElementById('explanation-card');
+      const elExplanationTitle = document.getElementById('explanation-title');
+      const elExplanationBody = document.getElementById('explanation-body');
+
+      const elBtnStart = document.getElementById('btn-start');
+      const elBtnPrev = document.getElementById('btn-prev');
+      const elBtnPlay = document.getElementById('btn-play');
+      const elBtnNext = document.getElementById('btn-next');
+      const elBtnEnd = document.getElementById('btn-end');
+      const elSpeedSlider = document.getElementById('speed-slider');
+      const elSpeedLabel = document.getElementById('speed-label');
+
+      const elFinalBanner = document.getElementById('final-formula-banner');
+      const elFracDesc = document.getElementById('frac-desc');
+      const elFractionsList = document.getElementById('fractions-list');
+      const elNwdMainVal = document.getElementById('nwd-main-val');
+      const elNwdFormulaBox = document.getElementById('nwd-formula-box');
+
+      // =========================================================
+      // FUNKCJE MATEMATYCZNE (DOKŁADNE BIGINT + ROZKŁAD)
+      // =========================================================
+
+      function formatInt(val) {
+        return String(val).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+      }
+
+      function gcdBig(a, b) {
+        let x = a;
+        let y = b;
+        while (y !== 0n) {
+          const t = x % y;
+          x = y;
+          y = t;
+        }
+        return x;
+      }
+
+      function lcmBig(a, b) {
+        if (a === 0n || b === 0n) return 0n;
+        return (a / gcdBig(a, b)) * b;
+      }
+
+      function smallestPrimeFactor(n) {
+        if (n <= 1) return 1;
+        if (n % 2 === 0) return 2;
+        if (n % 3 === 0) return 3;
+        const limit = Math.floor(Math.sqrt(n));
+        for (let i = 5; i <= limit; i += 6) {
+          if (n % i === 0) return i;
+          if (n % (i + 2) === 0) return i + 2;
+        }
+        return n;
+      }
+
+      function factorizeNumber(n) {
+        const divisions = [];
+        let curr = n;
+        while (curr > 1) {
+          const p = smallestPrimeFactor(curr);
+          const q = curr / p;
+          divisions.push({ dividend: curr, factor: p, quotient: q });
+          curr = q;
+        }
+        return divisions;
+      }
+
+      function divisibilityHintHtml(n, p) {
+        if (p === n) {
+          return `Liczba <span class="chip chip-blue">${formatInt(n)}</span> jest <strong>liczbą pierwszą</strong>, więc dzieli się tylko przez samą siebie.`;
+        }
+        if (p === 2) {
+          return `Liczba <span class="chip chip-blue">${formatInt(n)}</span> jest <strong>parzysta</strong> (kończy się cyfrą ${n % 10}), więc dzieli się przez <span class="chip chip-green">2</span>.`;
+        }
+        if (p === 3) {
+          const digits = String(n).split('').map(Number);
+          const sum = digits.reduce((a, b) => a + b, 0);
+          return `<strong>Suma cyfr</strong> liczby <span class="chip chip-blue">${formatInt(n)}</span> wynosi ${digits.join(' + ')} = ${sum} (dzieli się przez 3), więc dzielimy przez <span class="chip chip-green">3</span>.`;
+        }
+        if (p === 5) {
+          return `Liczba <span class="chip chip-blue">${formatInt(n)}</span> kończy się cyfrą <strong>${n % 10}</strong>, więc dzieli się przez <span class="chip chip-green">5</span>.`;
+        }
+        const smaller = SMALL_PRIMES.filter(x => x < p).slice(0, 4).join(', ');
+        return `Liczba <span class="chip chip-blue">${formatInt(n)}</span> nie dzieli się przez mniejsze liczby pierwsze (${smaller}${p > 11 ? '...' : ''}) — najmniejszym dzielnikiem jest <span class="chip chip-green">${formatInt(p)}</span>.`;
+      }
+
+      function pluralRazy(n) {
+        if (n === 1) return '1 raz';
+        return `${n} razy`;
+      }
+
+      // =========================================================
+      // GENERATOR MODELU I KROKÓW DLA WSZYSTKICH 3 METOD
+      // =========================================================
+
+      function buildModel(nums) {
+        const bigNums = nums.map(n => BigInt(n));
+        const nwd = bigNums.reduce((acc, v) => gcdBig(acc, v));
+        const nww = bigNums.reduce((acc, v) => lcmBig(acc, v));
+
+        // Rozkłady osobne dla każdej liczby
+        const factorizations = nums.map(n => factorizeNumber(n));
+        const factorsPerNum = factorizations.map(divs => divs.map(d => d.factor));
+
+        // Zbieramy unikalne liczby pierwsze (posortowane rosnąco) oraz maksymalną liczbę wystąpień
+        const primeSet = new Set();
+        factorsPerNum.forEach(arr => arr.forEach(p => primeSet.add(p)));
+        const uniquePrimes = Array.from(primeSet).sort((a, b) => a - b);
+
+        // Dla każdej liczby pierwszej wyznaczamy, w której z liczb wystąpiła najwięcej razy (zwycięski wiersz)
+        const primeChoices = uniquePrimes.map((p) => {
+          const counts = factorsPerNum.map(arr => arr.filter(x => x === p).length);
+          let maxCount = 0;
+          let winnerIdx = 0;
+          counts.forEach((cnt, idx) => {
+            if (cnt > maxCount) {
+              maxCount = cnt;
+              winnerIdx = idx;
+            }
+          });
+          return { prime: p, counts, maxCount, winnerIdx };
+        });
+
+        // Płaska lista wybranych czynników pierwszych do NWW (posortowana rosnąco)
+        const lcmFactors = [];
+        primeChoices.forEach(({ prime, maxCount }) => {
+          for (let i = 0; i < maxCount; i++) {
+            lcmFactors.push(prime);
+          }
+        });
+
+        // Zbudowanie kroków dla każdej z 3 zakładek
+        const separateSteps = buildSeparateSteps(nums, factorizations, factorsPerNum, primeChoices, lcmFactors, nww);
+        const tableSteps = buildSharedTableSteps(nums, nww);
+        const multiplesData = buildMultiplesData(nums, nww);
+
+        return {
+          nums,
+          nwd,
+          nww,
+          factorizations,
+          factorsPerNum,
+          primeChoices,
+          lcmFactors,
+          separateSteps,
+          tableSteps,
+          multiplesData
+        };
+      }
+
+      // ---------------------------------------------------------
+      // GENERATOR KROKÓW — ZAKŁADKA 1: ROZKŁAD NA CZYNNIKI (OSOBNO)
+      // ---------------------------------------------------------
+      function buildSeparateSteps(nums, factorizations, factorsPerNum, primeChoices, lcmFactors, nww) {
+        const steps = [];
+        const completedPerCard = nums.map(() => 0);
+        const numsLabel = nums.map(n => formatInt(n)).join(', ');
+
+        // Krok 0: Start
+        steps.push({
+          stage: 'start',
+          stageLabel: 'Start',
+          title: 'Przygotowanie rozkładu na czynniki pierwsze',
+          explanationHtml: `Wyznaczymy <span class="chip chip-green">NWW(${numsLabel})</span>. Najpierw rozłożymy każdą z liczb osobno na czynniki pierwsze, potem wybierzemy największe liczby wystąpień każdego czynnika, a na końcu je pomnożymy.`,
+          completedPerCard: [...completedPerCard],
+          activeCardIdx: null,
+          activeDivIdx: null,
+          showSelectBox: false,
+          selectedPrimes: [],
+          activeSelectPrime: null,
+          showMulStrip: false,
+          mulStepIdx: -1,
+          runningProduct: null
+        });
+
+        // Etap 1: Rozkład każdej liczby po kolei
+        nums.forEach((num, cardIdx) => {
+          const divs = factorizations[cardIdx];
+          if (divs.length === 0) {
+            // Przypadek brzegowy: liczba 1
+            steps.push({
+              stage: 'factor',
+              stageLabel: 'Rozkład',
+              title: `Liczba ${num} — przypadek szczególny`,
+              explanationHtml: `Liczba <span class="chip chip-blue">1</span> nie ma czynników pierwszych (jest neutralna w mnożeniu), więc nie wymaga rozkładu — przechodzimy dalej.`,
+              completedPerCard: [...completedPerCard],
+              activeCardIdx: cardIdx,
+              activeDivIdx: -1,
+              showSelectBox: false,
+              selectedPrimes: [],
+              activeSelectPrime: null,
+              showMulStrip: false,
+              mulStepIdx: -1,
+              runningProduct: null
+            });
+            return;
+          }
+
+          divs.forEach((d, dIdx) => {
+            completedPerCard[cardIdx] = dIdx + 1;
+            steps.push({
+              stage: 'factor',
+              stageLabel: 'Rozkład',
+              title: `Rozkład liczby ${formatInt(num)}: dzielimy ${formatInt(d.dividend)} przez ${formatInt(d.factor)}`,
+              divHintData: { n: d.dividend, p: d.factor },
+              baseExplain: `Dzielimy <span class="chip chip-blue">${formatInt(d.dividend)}</span> przez <span class="chip chip-green">${formatInt(d.factor)}</span>: <span class="chip chip-amber">${formatInt(d.dividend)} : ${formatInt(d.factor)} = ${formatInt(d.quotient)}</span>.${d.quotient === 1 ? ' Otrzymaliśmy <strong>1</strong> — rozkład tej liczby gotowy!' : ''}`,
+              completedPerCard: [...completedPerCard],
+              activeCardIdx: cardIdx,
+              activeDivIdx: dIdx,
+              showSelectBox: false,
+              selectedPrimes: [],
+              activeSelectPrime: null,
+              showMulStrip: false,
+              mulStepIdx: -1,
+              runningProduct: null
+            });
+          });
+        });
+
+        // Etap 2: Wybór czynników do NWW (tylko jeśli istnieją jakiekolwiek czynniki pierwsze)
+        const selectedPrimesSoFar = [];
+        if (primeChoices.length > 0) {
+          // Krok przejściowy: pokazanie poziomych rozkładów
+          steps.push({
+            stage: 'select',
+            stageLabel: 'Wybór czynników',
+            title: 'Zapisujemy rozkłady obok siebie',
+            explanationHtml: 'Wszystkie liczby są rozłożone! Teraz wypisujemy ich czynniki w poziomie i zastosujemy złotą zasadę NWW: <strong>każdą liczbę pierwszą bierzemy tyle razy, ile maksymalnie razy wystąpiła w jednej z liczb</strong>.',
+            completedPerCard: [...completedPerCard],
+            activeCardIdx: null,
+            activeDivIdx: null,
+            showSelectBox: true,
+            selectedPrimes: [],
+            activeSelectPrime: null,
+            showMulStrip: false,
+            mulStepIdx: -1,
+            runningProduct: null
+          });
+
+          primeChoices.forEach((choice) => {
+            selectedPrimesSoFar.push(choice.prime);
+            const winnerNum = nums[choice.winnerIdx];
+            const countsText = nums
+              .map((n, idx) => `w ${formatInt(n)}: ${pluralRazy(choice.counts[idx])}`)
+              .join(', ');
+            const hasCrossed = choice.counts.some((c, idx) => idx !== choice.winnerIdx && c > 0);
+
+            let expHtml = `Analizujemy czynnik <span class="chip chip-green">${formatInt(choice.prime)}</span> (${countsText}). `;
+            expHtml += `Najwięcej razy wystąpił w liczbie <span class="chip chip-blue">${formatInt(winnerNum)}</span> (${pluralRazy(choice.maxCount)}), więc wybieramy go <strong style="color:#15803d;">${pluralRazy(choice.maxCount)}</strong>.`;
+            if (hasCrossed) {
+              expHtml += ' Powtórzenia z pozostałych liczb przekreślamy, żeby nie liczyć ich podwójnie.';
+            }
+
+            steps.push({
+              stage: 'select',
+              stageLabel: 'Wybór czynników',
+              title: `Wybieramy czynnik pierwszy ${formatInt(choice.prime)}`,
+              explanationHtml: expHtml,
+              completedPerCard: [...completedPerCard],
+              activeCardIdx: null,
+              activeDivIdx: null,
+              showSelectBox: true,
+              selectedPrimes: [...selectedPrimesSoFar],
+              activeSelectPrime: choice.prime,
+              showMulStrip: false,
+              mulStepIdx: -1,
+              runningProduct: null
+            });
+          });
+        }
+
+        // Etap 3: Mnożenie wybranych czynników krok po kroku
+        if (lcmFactors.length === 0) {
+          // Wszystkie liczby to 1
+          steps.push({
+            stage: 'done',
+            stageLabel: 'Wynik',
+            title: 'Gotowe! Wynik końcowy NWW',
+            explanationHtml: `Wszystkie wpisane liczby są równe 1, dlatego <span class="chip chip-green">NWW(${numsLabel}) = 1</span>.`,
+            completedPerCard: [...completedPerCard],
+            activeCardIdx: null,
+            activeDivIdx: null,
+            showSelectBox: false,
+            selectedPrimes: [],
+            activeSelectPrime: null,
+            showMulStrip: true,
+            mulStepIdx: 0,
+            runningProduct: 1n
+          });
+        } else if (lcmFactors.length === 1) {
+          steps.push({
+            stage: 'done',
+            stageLabel: 'Wynik',
+            title: 'Gotowe! Wynik końcowy NWW',
+            explanationHtml: `Wybraliśmy tylko jeden czynnik pierwszy (<span class="chip chip-green">${formatInt(lcmFactors[0])}</span>), więc <span class="chip chip-green">NWW(${numsLabel}) = ${formatInt(nww)}</span>.`,
+            completedPerCard: [...completedPerCard],
+            activeCardIdx: null,
+            activeDivIdx: null,
+            showSelectBox: true,
+            selectedPrimes: [...selectedPrimesSoFar],
+            activeSelectPrime: null,
+            showMulStrip: true,
+            mulStepIdx: 0,
+            runningProduct: nww
+          });
+        } else {
+          let running = BigInt(lcmFactors[0]);
+          for (let i = 1; i < lcmFactors.length; i++) {
+            const prev = running;
+            const factor = BigInt(lcmFactors[i]);
+            running = prev * factor;
+            const isLastMul = i === lcmFactors.length - 1;
+
+            steps.push({
+              stage: isLastMul ? 'done' : 'multiply',
+              stageLabel: isLastMul ? 'Wynik' : 'Obliczanie NWW',
+              title: isLastMul
+                ? `Ostatnie mnożenie — mamy NWW(${numsLabel})!`
+                : `Mnożenie wybranych czynników (${i} z ${lcmFactors.length - 1})`,
+              explanationHtml: isLastMul
+                ? `Mnożymy ostatni czynnik: <span class="chip chip-purple">${formatInt(prev)} · ${formatInt(factor)} = ${formatInt(running)}</span>. Gotowe! <span class="chip chip-green">NWW(${numsLabel}) = ${formatInt(nww)}</span>.`
+                : `Mnożymy wybrane czynniki po kolei: <span class="chip chip-purple">${formatInt(prev)} · ${formatInt(factor)} = ${formatInt(running)}</span>.`,
+              completedPerCard: [...completedPerCard],
+              activeCardIdx: null,
+              activeDivIdx: null,
+              showSelectBox: true,
+              selectedPrimes: [...selectedPrimesSoFar],
+              activeSelectPrime: null,
+              showMulStrip: true,
+              mulStepIdx: i,
+              runningProduct: running
+            });
+          }
+        }
+
+        return steps;
+      }
+
+      // ---------------------------------------------------------
+      // GENERATOR KROKÓW — ZAKŁADKA 2: WSPÓLNA TABELA (SZYBKA METODA)
+      // ---------------------------------------------------------
+      function buildSharedTableSteps(nums, nww) {
+        const numsLabel = nums.map(n => formatInt(n)).join(', ');
+
+        // Symulujemy całą wspólną tabelę
+        // Wiersze tabeli: rows[0] = nums; po każdym dzieleniu przez najmniejszy czynnik pierwszy
+        // spośród liczb > 1 powstaje nowy wiersz.
+        const tableRows = [{ values: [...nums], carriedFlags: nums.map(() => false) }];
+        const rightFactors = []; // Czynnik w wierszu i (dla i = 0..k-1)
+        const rowDivisibleFlags = []; // Które kolumny w wierszu i były podzielne przez rightFactors[i]
+
+        let curr = [...nums];
+        while (curr.some(v => v > 1)) {
+          // Najmniejszy czynnik pierwszy spośród wszystkich liczb > 1 w bieżącym wierszu
+          let minPrime = Infinity;
+          curr.forEach((v) => {
+            if (v > 1) {
+              const spf = smallestPrimeFactor(v);
+              if (spf < minPrime) minPrime = spf;
+            }
+          });
+
+          const divFlags = curr.map(v => v > 1 && v % minPrime === 0);
+          const nextVals = curr.map((v, idx) => (divFlags[idx] ? v / minPrime : v));
+          const carriedFlags = curr.map((v, idx) => v > 1 && !divFlags[idx]);
+
+          rightFactors.push(minPrime);
+          rowDivisibleFlags.push(divFlags);
+          tableRows.push({ values: nextVals, carriedFlags });
+          curr = nextVals;
+        }
+
+        const steps = [];
+
+        // Krok 0: Start
+        steps.push({
+          stage: 'start',
+          stageLabel: 'Start',
+          title: 'Wspólna tabela — zapisujemy wszystkie liczby razem',
+          explanationHtml: `W szybkiej metodzie zapisujemy liczby <span class="chip chip-blue">${numsLabel}</span> obok siebie przed jedną pionową kreską. W każdym kroku dzielimy przez najmniejszą liczbę pierwszą te liczby, które się przez nią dzielą, a pozostałe przepisujemy bez zmian.`,
+          tableRows,
+          rightFactors,
+          rowDivisibleFlags,
+          visibleRowsCount: 1,
+          activeRowIdx: null,
+          highlightAllFactors: false,
+          showMulStrip: false,
+          mulStepIdx: -1,
+          runningProduct: null
+        });
+
+        // Kroki dzielenia wiersz po wierszu
+        for (let i = 0; i < rightFactors.length; i++) {
+          const p = rightFactors[i];
+          const prevVals = tableRows[i].values;
+          const nextVals = tableRows[i + 1].values;
+          const divFlags = rowDivisibleFlags[i];
+
+          const dividedDesc = [];
+          const carriedDesc = [];
+          prevVals.forEach((v, colIdx) => {
+            if (divFlags[colIdx]) {
+              dividedDesc.push(`<span class="chip chip-amber">${formatInt(v)} : ${formatInt(p)} = ${formatInt(nextVals[colIdx])}</span>`);
+            } else if (v > 1) {
+              carriedDesc.push(`<span class="chip chip-num">${formatInt(v)}</span>`);
+            }
+          });
+
+          const firstDivVal = prevVals.find((v, colIdx) => divFlags[colIdx]);
+          let baseExplain = `Dzielimy przez <span class="chip chip-green">${formatInt(p)}</span>: ${dividedDesc.join(', ')}.`;
+          if (carriedDesc.length > 0) {
+            baseExplain += ` Niepodzielne (${carriedDesc.join(', ')}) przepisujemy bez zmian.`;
+          }
+          if (i === rightFactors.length - 1) {
+            baseExplain += ' Wszystkie kolumny doszły do <strong>1</strong>!';
+          }
+
+          steps.push({
+            stage: 'factor',
+            stageLabel: 'Rozkład',
+            title: `Krok dzielenia nr ${i + 1}: dzielimy przez ${formatInt(p)}`,
+            divHintData: firstDivVal ? { n: firstDivVal, p } : null,
+            baseExplain,
+            tableRows,
+            rightFactors,
+            rowDivisibleFlags,
+            visibleRowsCount: i + 2,
+            activeRowIdx: i,
+            highlightAllFactors: false,
+            showMulStrip: false,
+            mulStepIdx: -1,
+            runningProduct: null
+          });
+        }
+
+        // Etap mnożenia prawej kolumny
+        if (rightFactors.length === 0) {
+          steps.push({
+            stage: 'done',
+            stageLabel: 'Wynik',
+            title: 'Gotowe! Wynik końcowy NWW',
+            explanationHtml: `Wszystkie liczby to 1, więc <span class="chip chip-green">NWW(${numsLabel}) = 1</span>.`,
+            tableRows,
+            rightFactors,
+            rowDivisibleFlags,
+            visibleRowsCount: tableRows.length,
+            activeRowIdx: null,
+            highlightAllFactors: true,
+            showMulStrip: true,
+            mulStepIdx: 0,
+            runningProduct: 1n
+          });
+        } else if (rightFactors.length === 1) {
+          steps.push({
+            stage: 'done',
+            stageLabel: 'Wynik',
+            title: 'Gotowe! Wynik końcowy NWW',
+            explanationHtml: `Po prawej stronie kreski jest tylko jedna liczba (<span class="chip chip-green">${formatInt(rightFactors[0])}</span>), więc <span class="chip chip-green">NWW(${numsLabel}) = ${formatInt(nww)}</span>.`,
+            tableRows,
+            rightFactors,
+            rowDivisibleFlags,
+            visibleRowsCount: tableRows.length,
+            activeRowIdx: null,
+            highlightAllFactors: true,
+            showMulStrip: true,
+            mulStepIdx: 0,
+            runningProduct: nww
+          });
+        } else {
+          // Krok podświetlenia całej prawej kolumny
+          steps.push({
+            stage: 'multiply',
+            stageLabel: 'Obliczanie NWW',
+            title: 'Mnożymy wszystkie czynniki z prawej kolumny',
+            explanationHtml: `Wszystkie liczby po lewej osiągnęły <strong>1</strong>. Teraz wystarczy pomnożyć przez siebie wszystkie czynniki pierwsze z prawej strony kreski!`,
+            tableRows,
+            rightFactors,
+            rowDivisibleFlags,
+            visibleRowsCount: tableRows.length,
+            activeRowIdx: null,
+            highlightAllFactors: true,
+            showMulStrip: true,
+            mulStepIdx: 0,
+            runningProduct: BigInt(rightFactors[0])
+          });
+
+          let running = BigInt(rightFactors[0]);
+          for (let i = 1; i < rightFactors.length; i++) {
+            const prev = running;
+            const f = BigInt(rightFactors[i]);
+            running = prev * f;
+            const isLast = i === rightFactors.length - 1;
+
+            steps.push({
+              stage: isLast ? 'done' : 'multiply',
+              stageLabel: isLast ? 'Wynik' : 'Obliczanie NWW',
+              title: isLast
+                ? `Gotowe! NWW(${numsLabel}) = ${formatInt(nww)}`
+                : `Mnożenie prawej kolumny (${i} z ${rightFactors.length - 1})`,
+              explanationHtml: isLast
+                ? `Ostatnie mnożenie: <span class="chip chip-purple">${formatInt(prev)} · ${formatInt(f)} = ${formatInt(running)}</span>. Zatem <span class="chip chip-green">NWW(${numsLabel}) = ${formatInt(nww)}</span>.`
+                : `Mnożymy dalej: <span class="chip chip-purple">${formatInt(prev)} · ${formatInt(f)} = ${formatInt(running)}</span>.`,
+              tableRows,
+              rightFactors,
+              rowDivisibleFlags,
+              visibleRowsCount: tableRows.length,
+              activeRowIdx: null,
+              highlightAllFactors: isLast,
+              showMulStrip: true,
+              mulStepIdx: i,
+              runningProduct: running
+            });
+          }
+        }
+
+        return steps;
+      }
+
+      // ---------------------------------------------------------
+      // GENERATOR KROKÓW — ZAKŁADKA 3: WYPISYWANIE WIELOKROTNOŚCI
+      // ---------------------------------------------------------
+      function buildMultiplesData(nums, nww) {
+        const minNum = BigInt(Math.min(...nums));
+        const maxNeededForSmallest = nww / minNum;
+        const numsLabel = nums.map(n => formatInt(n)).join(', ');
+
+        // Limit bezpieczeństwa i czytelności: maks. 25 wielokrotności dla najmniejszej liczby
+        if (maxNeededForSmallest > 25n) {
+          const previewRows = nums.map(n => {
+            const arr = [];
+            for (let k = 1; k <= 6; k++) arr.push(BigInt(n) * BigInt(k));
+            return arr;
+          });
+          return {
+            tooMany: true,
+            neededCount: maxNeededForSmallest,
+            previewRows,
+            steps: [
+              {
+                stage: 'multiples',
+                stageLabel: 'Za dużo kroków',
+                title: 'Dla tych liczb lepiej użyć rozkładu na czynniki pierwsze!',
+                explanationHtml: `Aby znaleźć <span class="chip chip-green">NWW(${numsLabel}) = ${formatInt(nww)}</span> przez wypisywanie wielokrotności, trzeba by wypisać aż <strong>${formatInt(maxNeededForSmallest)}</strong> wielokrotności liczby <span class="chip chip-blue">${formatInt(minNum)}</span>. Zobacz podgląd kilku pierwszych wielokrotności i przełącz się na szybszą metodę rozkładu!`
+              }
+            ]
+          };
+        }
+
+        // Budujemy krok po kroku algorytmem zbieżności (zawsze dopisujemy kolejną wielokrotność dla najmniejszej bieżącej)
+        const currentLists = nums.map(n => [BigInt(n)]);
+        const steps = [];
+
+        const allEqualNow = () => {
+          const firstLast = currentLists[0][currentLists[0].length - 1];
+          return currentLists.every(list => list[list.length - 1] === firstLast);
+        };
+
+        // Krok 0: Pierwsze wielokrotności (1 × każda liczba)
+        const alreadyMatched = allEqualNow();
+        steps.push({
+          stage: alreadyMatched ? 'done' : 'start',
+          stageLabel: alreadyMatched ? 'Wynik' : 'Start',
+          title: alreadyMatched
+            ? `Natychmiastowe trafienie! NWW(${numsLabel}) = ${formatInt(nww)}`
+            : 'Wypisujemy pierwszą wielokrotność każdej liczby',
+          explanationHtml: alreadyMatched
+            ? `Wszystkie wpisane liczby są takie same (<span class="chip chip-green">${formatInt(nww)}</span>), więc już pierwsza wielokrotność jest ich najmniejszą wspólną wielokrotnością!`
+            : `Zaczynamy od samych liczb (czyli 1-krotności). W każdym kroku dopiszemy kolejną wielokrotność dla tej liczby, której aktualna ostatnia wielokrotność jest <strong>najmniejsza</strong> — aż wszystkie wiersze spotkają się na jednej liczbie!`,
+          lists: currentLists.map(l => [...l]),
+          activeRowIdx: null,
+          matched: alreadyMatched
+        });
+
+        while (!allEqualNow()) {
+          // Znajdź wiersz o najmniejszej bieżącej (ostatniej) wielokrotności
+          let minIdx = 0;
+          let minVal = currentLists[0][currentLists[0].length - 1];
+          for (let i = 1; i < currentLists.length; i++) {
+            const lastVal = currentLists[i][currentLists[i].length - 1];
+            if (lastVal < minVal) {
+              minVal = lastVal;
+              minIdx = i;
+            }
+          }
+
+          const baseNum = BigInt(nums[minIdx]);
+          const nextMult = minVal + baseNum;
+          const multIndex = currentLists[minIdx].length + 1;
+          currentLists[minIdx].push(nextMult);
+
+          const matchedNow = allEqualNow();
+
+          steps.push({
+            stage: matchedNow ? 'done' : 'multiples',
+            stageLabel: matchedNow ? 'Wynik' : 'Szukanie wielokrotności',
+            title: matchedNow
+              ? `Mamy wspólną wielokrotność! NWW(${numsLabel}) = ${formatInt(nww)}`
+              : `Dopisujemy kolejną wielokrotność liczby ${formatInt(baseNum)}`,
+            explanationHtml: matchedNow
+              ? `Dopisujemy ${multIndex}. wielokrotność liczby <span class="chip chip-blue">${formatInt(baseNum)}</span>: <span class="chip chip-amber">${multIndex} · ${formatInt(baseNum)} = ${formatInt(nextMult)}</span>. Wszystkie wiersze spotkały się na liczbie <span class="chip chip-green">${formatInt(nww)}</span> — to właśnie <span class="chip chip-green">NWW(${numsLabel})</span>!`
+              : `Najmniejsza aktualna wartość (<span class="chip chip-num">${formatInt(minVal)}</span>) jest w wierszu <strong>W(${formatInt(baseNum)})</strong>. Dopisujemy kolejną wielokrotność: <span class="chip chip-amber">${multIndex} · ${formatInt(baseNum)} = ${formatInt(nextMult)}</span>.`,
+            lists: currentLists.map(l => [...l]),
+            activeRowIdx: minIdx,
+            matched: matchedNow
+          });
+        }
+
+        return {
+          tooMany: false,
+          neededCount: maxNeededForSmallest,
+          steps
+        };
+      }
+
+      // =========================================================
+      // POBIERANIE AKTYWNEJ LISTY KROKÓW
+      // =========================================================
+
+      function getActiveSteps() {
+        if (!state.model) return [];
+        if (state.activeTab === 'separate') return state.model.separateSteps;
+        if (state.activeTab === 'table') return state.model.tableSteps;
+        return state.model.multiplesData.steps;
+      }
+
+      // =========================================================
+      // RENDEROWANIE WIZUALIZACJI DLA KAŻDEJ ZAKŁADKI
+      // =========================================================
+
+      function renderSeparateTab(model, step) {
+        const { nums, factorizations, factorsPerNum, primeChoices, lcmFactors } = model;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sep-wrapper';
+
+        // 1. Pionowe tabelki rozkładu obok siebie
+        const tablesRow = document.createElement('div');
+        tablesRow.className = 'sep-tables-row';
+
+        nums.forEach((num, cardIdx) => {
+          const divs = factorizations[cardIdx];
+          const doneCount = step.completedPerCard[cardIdx];
+          const isCardActive = step.activeCardIdx === cardIdx;
+
+          const card = document.createElement('div');
+          card.className = 'mini-factor-card' + (isCardActive ? ' is-active-card' : '');
+
+          const head = document.createElement('div');
+          head.className = 'mini-card-head';
+          head.textContent = `Liczba ${formatInt(num)}`;
+          card.appendChild(head);
+
+          const grid = document.createElement('div');
+          grid.className = 'mini-bar-grid';
+
+          if (divs.length === 0) {
+            // Liczba 1
+            const lCell = document.createElement('div');
+            lCell.className = 'mb-left is-one';
+            lCell.innerHTML = '<span>1</span>';
+            const sep = document.createElement('div');
+            sep.className = 'mb-line';
+            const rCell = document.createElement('div');
+            rCell.className = 'mb-right';
+            rCell.innerHTML = '<span class="mb-dash">—</span>';
+            grid.append(lCell, sep, rCell);
+          } else {
+            for (let i = 0; i <= doneCount; i++) {
+              const leftVal = i === 0 ? num : divs[i - 1].quotient;
+              const isOne = i === divs.length && leftVal === 1;
+              const isActiveRow = isCardActive && step.activeDivIdx === i;
+
+              const lCell = document.createElement('div');
+              lCell.className = 'mb-left';
+              if (isActiveRow) lCell.classList.add('is-active');
+              if (isOne) {
+                lCell.classList.add('is-one');
+                lCell.innerHTML = '<span>1</span>';
+              } else {
+                lCell.textContent = formatInt(leftVal);
+              }
+
+              const sep = document.createElement('div');
+              sep.className = 'mb-line';
+
+              const rCell = document.createElement('div');
+              rCell.className = 'mb-right';
+              if (i < doneCount) {
+                const badge = document.createElement('span');
+                badge.className = 'mb-factor' + (isActiveRow ? ' is-active' : '');
+                badge.textContent = formatInt(divs[i].factor);
+                rCell.appendChild(badge);
+              }
+
+              grid.append(lCell, sep, rCell);
+            }
+          }
+
+          card.appendChild(grid);
+
+          // Dymek pomocniczy pod aktywną tabelką (np. 12 : 2 = 6)
+          if (isCardActive && step.activeDivIdx !== null && step.activeDivIdx >= 0) {
+            const d = divs[step.activeDivIdx];
+            const bubbleWrap = document.createElement('div');
+            bubbleWrap.className = 'mini-div-bubble';
+            bubbleWrap.innerHTML = `<span class="div-pill">${formatInt(d.dividend)} : ${formatInt(d.factor)} = ${formatInt(d.quotient)}</span>`;
+            card.appendChild(bubbleWrap);
+          }
+
+          tablesRow.appendChild(card);
+        });
+
+        wrapper.appendChild(tablesRow);
+
+        // 2. Poziome rozkłady i wybieranie czynników (Etap 2 i 3)
+        if (step.showSelectBox) {
+          const selectBox = document.createElement('div');
+          selectBox.className = 'select-box';
+          selectBox.innerHTML = '<div class="select-box-title">Wybieranie czynników pierwszych do NWW</div>';
+
+          const horizRows = document.createElement('div');
+          horizRows.className = 'horiz-rows';
+
+          const selectedSet = new Set(step.selectedPrimes);
+          const choiceMap = new Map();
+          primeChoices.forEach(c => choiceMap.set(c.prime, c));
+
+          nums.forEach((num, numIdx) => {
+            const row = document.createElement('div');
+            row.className = 'horiz-row';
+
+            const label = document.createElement('span');
+            label.className = 'horiz-num';
+            label.textContent = `${formatInt(num)} =`;
+            row.appendChild(label);
+
+            const arr = factorsPerNum[numIdx];
+            if (arr.length === 0) {
+              const note = document.createElement('span');
+              note.style.cssText = 'font-family: var(--font-sans); font-size: 0.86rem; color: #64748b; font-style: italic;';
+              note.textContent = '(brak czynników pierwszych)';
+              row.appendChild(note);
+            } else {
+              arr.forEach((p, fIdx) => {
+                if (fIdx > 0) {
+                  const dot = document.createElement('span');
+                  dot.className = 'dot-op';
+                  dot.textContent = '·';
+                  row.appendChild(dot);
+                }
+
+                const tile = document.createElement('span');
+                tile.className = 'ftile';
+                tile.textContent = formatInt(p);
+
+                if (selectedSet.has(p)) {
+                  const ch = choiceMap.get(p);
+                  const isWinner = ch.winnerIdx === numIdx;
+                  const isNow = step.activeSelectPrime === p;
+
+                  if (isWinner) {
+                    tile.classList.add(isNow ? 'is-chosen-now' : 'is-chosen');
+                  } else {
+                    tile.classList.add(isNow ? 'is-crossed-now' : 'is-crossed');
+                  }
+                }
+
+                row.appendChild(tile);
+              });
+            }
+
+            horizRows.appendChild(row);
+          });
+
+          selectBox.appendChild(horizRows);
+          wrapper.appendChild(selectBox);
+        }
+
+        // 3. Pasek mnożenia końcowego NWW (Etap 3)
+        if (step.showMulStrip) {
+          wrapper.appendChild(buildMultiplicationStrip(nums, lcmFactors, step.mulStepIdx, step.runningProduct, step.stage === 'done'));
+        }
+
+        elVizContainer.innerHTML = '';
+        elVizContainer.appendChild(wrapper);
+      }
+
+      function buildMultiplicationStrip(nums, factors, mulStepIdx, runningProduct, isDone) {
+        const strip = document.createElement('div');
+        strip.className = 'mul-strip' + (isDone ? ' is-done' : '');
+
+        const label = document.createElement('div');
+        label.className = 'mul-strip-label';
+        label.textContent = isDone ? '✓ Obliczona Najmniejsza Wspólna Wielokrotność' : 'Mnożenie wybranych czynników pierwszych';
+        strip.appendChild(label);
+
+        const eqLine = document.createElement('div');
+        eqLine.className = 'mul-eq-line';
+
+        const prefix = document.createElement('span');
+        prefix.textContent = `NWW(${nums.map(formatInt).join(', ')}) =`;
+        eqLine.appendChild(prefix);
+
+        if (factors.length === 0) {
+          const res = document.createElement('span');
+          res.className = 'mul-running';
+          res.textContent = '1';
+          eqLine.appendChild(res);
+        } else {
+          factors.forEach((p, idx) => {
+            if (idx > 0) {
+              const dot = document.createElement('span');
+              dot.className = 'dot-op';
+              dot.textContent = '·';
+              eqLine.appendChild(dot);
+            }
+            const chip = document.createElement('span');
+            chip.className = 'mul-chip';
+            if (idx === mulStepIdx && !isDone) {
+              chip.classList.add('is-current');
+            } else if (idx <= mulStepIdx) {
+              chip.classList.add('is-used');
+            }
+            chip.textContent = formatInt(p);
+            eqLine.appendChild(chip);
+          });
+
+          if (runningProduct !== null) {
+            const eqSign = document.createElement('span');
+            eqSign.textContent = isDone ? '=' : '→ dotąd:';
+            eqSign.style.cssText = 'color: #64748b; font-size: 0.92rem; margin: 0 2px;';
+            eqLine.appendChild(eqSign);
+
+            const resSpan = document.createElement('span');
+            resSpan.className = 'mul-running';
+            resSpan.textContent = formatInt(runningProduct);
+            eqLine.appendChild(resSpan);
+          }
+        }
+
+        strip.appendChild(eqLine);
+        return strip;
+      }
+
+      function renderSharedTableTab(model, step) {
+        const { nums } = model;
+        const { tableRows, rightFactors, rowDivisibleFlags, visibleRowsCount, activeRowIdx, highlightAllFactors } = step;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'shared-wrapper';
+
+        const card = document.createElement('div');
+        card.className = 'shared-table-card';
+
+        const grid = document.createElement('div');
+        grid.className = 'shared-grid';
+        // Kolumny: N kolumn na liczby + 1 kolumna na pionową kreskę + 1 kolumna na czynnik pierwszy
+        grid.style.gridTemplateColumns = `repeat(${nums.length}, minmax(68px, auto)) auto minmax(64px, auto)`;
+
+        for (let r = 0; r < visibleRowsCount; r++) {
+          const rowObj = tableRows[r];
+          const isThisActive = activeRowIdx === r;
+          const isJustCreated = activeRowIdx !== null && r === activeRowIdx + 1;
+          const isFinalRow = r === tableRows.length - 1 && rowObj.values.every(v => v === 1);
+
+          // Komórki z liczbami po lewej stronie kreski
+          rowObj.values.forEach((val, cIdx) => {
+            const cell = document.createElement('div');
+            cell.className = 'sg-cell';
+
+            if (isThisActive && rowDivisibleFlags[r] && rowDivisibleFlags[r][cIdx]) {
+              cell.classList.add('is-divisible-active');
+            } else if (rowObj.carriedFlags[cIdx]) {
+              cell.classList.add('is-carried');
+            }
+
+            if (isJustCreated && !rowObj.carriedFlags[cIdx]) {
+              cell.classList.add('is-new-val');
+            }
+
+            if (val === 1 && (isFinalRow || r > 0)) {
+              cell.classList.add('is-one');
+              cell.innerHTML = '<span>1</span>';
+            } else {
+              cell.textContent = formatInt(val);
+            }
+
+            grid.appendChild(cell);
+          });
+
+          // Pionowa kreska
+          const sep = document.createElement('div');
+          sep.className = 'sg-sep';
+          grid.appendChild(sep);
+
+          // Komórka czynnika pierwszego po prawej stronie kreski
+          const fCell = document.createElement('div');
+          fCell.className = 'sg-factor-cell';
+          if (r < visibleRowsCount - 1 && r < rightFactors.length) {
+            const badge = document.createElement('span');
+            badge.className = 'sg-factor-badge';
+            if (isThisActive) {
+              badge.classList.add('is-active');
+            } else if (step.showMulStrip && step.mulStepIdx === r && step.stage !== 'done') {
+              badge.classList.add('is-mul-highlight');
+            } else if (highlightAllFactors) {
+              badge.classList.add('is-all-highlight');
+            }
+            badge.textContent = formatInt(rightFactors[r]);
+            fCell.appendChild(badge);
+          }
+          grid.appendChild(fCell);
+        }
+
+        card.appendChild(grid);
+        wrapper.appendChild(card);
+
+        if (step.showMulStrip) {
+          wrapper.appendChild(buildMultiplicationStrip(nums, rightFactors, step.mulStepIdx, step.runningProduct, step.stage === 'done'));
+        }
+
+        elVizContainer.innerHTML = '';
+        elVizContainer.appendChild(wrapper);
+      }
+
+      function renderMultiplesTab(model, step) {
+        const { nums, nww, multiplesData } = model;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'mult-wrapper';
+
+        // Przypadek > 25 wielokrotności dla najmniejszej liczby
+        if (multiplesData.tooMany) {
+          const banner = document.createElement('div');
+          banner.className = 'mult-limit-banner';
+          banner.innerHTML = `
+            <h3>💡 Za dużo wielokrotności do wypisania ręcznie (${formatInt(multiplesData.neededCount)} kroków!)</h3>
+            <p>Dla liczb <strong>${nums.map(formatInt).join(', ')}</strong> najmniejsza wspólna wielokrotność wynosi <strong>${formatInt(nww)}</strong>. Wypisywanie wielokrotności na kartce zajęłoby zbyt wiele miejsca — w takich zadaniach w szkole używamy <strong>rozkładu na czynniki pierwsze</strong>.</p>
+          `;
+
+          const switchBtn = document.createElement('button');
+          switchBtn.type = 'button';
+          switchBtn.className = 'btn-switch-method';
+          switchBtn.textContent = 'Przełącz na „Rozkład na czynniki (osobno)” →';
+          switchBtn.addEventListener('click', () => setActiveTab('separate'));
+          banner.appendChild(switchBtn);
+          wrapper.appendChild(banner);
+
+          // Podgląd pierwszych 6 wielokrotności każdej liczby
+          nums.forEach((num, idx) => {
+            const card = document.createElement('div');
+            card.className = 'mult-row-card';
+            const head = document.createElement('div');
+            head.className = 'mult-row-head';
+            head.innerHTML = `<span>W(${formatInt(num)}):</span><span class="mult-row-sub">pierwsze 6 wielokrotności</span>`;
+            card.appendChild(head);
+
+            const pills = document.createElement('div');
+            pills.className = 'mult-pills';
+            multiplesData.previewRows[idx].forEach((val) => {
+              const p = document.createElement('span');
+              p.className = 'mult-pill';
+              p.textContent = formatInt(val);
+              pills.appendChild(p);
+            });
+            const dots = document.createElement('span');
+            dots.className = 'mult-dots';
+            dots.textContent = '...';
+            pills.appendChild(dots);
+
+            card.appendChild(pills);
+            wrapper.appendChild(card);
+          });
+
+          elVizContainer.innerHTML = '';
+          elVizContainer.appendChild(wrapper);
+          return;
+        }
+
+        // Standardowa wizualizacja krok po kroku
+        nums.forEach((num, rIdx) => {
+          const list = step.lists[rIdx];
+          const isActiveRow = step.activeRowIdx === rIdx;
+
+          const card = document.createElement('div');
+          card.className = 'mult-row-card';
+          if (step.matched) {
+            card.classList.add('is-matched-row');
+          } else if (isActiveRow) {
+            card.classList.add('is-active-row');
+          }
+
+          const head = document.createElement('div');
+          head.className = 'mult-row-head';
+          head.innerHTML = `<span>W(${formatInt(num)}):</span><span class="mult-row-sub">${list.length} ${list.length === 1 ? 'wielokrotność' : (list.length <= 4 ? 'wielokrotności' : 'wielokrotności')}</span>`;
+          card.appendChild(head);
+
+          const pills = document.createElement('div');
+          pills.className = 'mult-pills';
+
+          list.forEach((val, pIdx) => {
+            const isLast = pIdx === list.length - 1;
+            const pill = document.createElement('span');
+            pill.className = 'mult-pill';
+            if (step.matched && val === nww) {
+              pill.classList.add('is-lcm');
+            } else if (isActiveRow && isLast) {
+              pill.classList.add('is-new');
+            }
+            pill.textContent = formatInt(val);
+            pills.appendChild(pill);
+          });
+
+          card.appendChild(pills);
+          wrapper.appendChild(card);
+        });
+
+        elVizContainer.innerHTML = '';
+        elVizContainer.appendChild(wrapper);
+      }
+
+      // =========================================================
+      // RENDEROWANIE KARTY PODSUMOWANIA I DODATKÓW EDUKACYJNYCH
+      // =========================================================
+
+      function renderSummarySection(model) {
+        const { nums, nww, nwd, primeChoices, lcmFactors } = model;
+        const numsStr = nums.map(formatInt).join(', ');
+
+        // 1. Główny wzór NWW
+        let formulaHtml = `NWW(${numsStr}) = `;
+        if (lcmFactors.length === 0) {
+          formulaHtml += `<span class="final-lcm-highlight">1</span>`;
+        } else {
+          const productStr = lcmFactors.map(formatInt).join(' · ');
+          if (lcmFactors.length > 1) {
+            formulaHtml += `${productStr} = `;
+          }
+          const hasAnyPower = primeChoices.some(c => c.maxCount > 1);
+          if (state.showPowers && hasAnyPower) {
+            const powerStr = primeChoices
+              .map(c => (c.maxCount > 1 ? `${formatInt(c.prime)}<sup>${c.maxCount}</sup>` : formatInt(c.prime)))
+              .join(' · ');
+            formulaHtml += `${powerStr} = `;
+          }
+          formulaHtml += `<span class="final-lcm-highlight">${formatInt(nww)}</span>`;
+        }
+        elFinalBanner.innerHTML = formulaHtml;
+
+        // 2. Zastosowanie w ułamkach
+        elFracDesc.innerHTML = `Wyznaczone <strong>NWW = ${formatInt(nww)}</strong> to najmniejszy wspólny mianownik dla ułamków o mianownikach <strong>${numsStr}</strong>:`;
+        elFractionsList.innerHTML = '';
+
+        nums.forEach((den) => {
+          const denBig = BigInt(den);
+          const mult = nww / denBig;
+          const item = document.createElement('div');
+          item.className = 'frac-item';
+          item.innerHTML = `
+            <span class="frac"><span class="frac-num">1</span><span class="frac-den">${formatInt(den)}</span></span>
+            <span>=</span>
+            <span class="frac is-expanded"><span class="frac-num">${formatInt(mult)}</span><span class="frac-den">${formatInt(nww)}</span></span>
+            <span class="frac-expand-badge">${mult === 1n ? 'bez rozszerzania (× 1)' : `rozszerzamy × ${formatInt(mult)}`}</span>
+          `;
+          elFractionsList.appendChild(item);
+        });
+
+        // 3. Powiązanie z NWD
+        elNwdMainVal.innerHTML = `NWD(${numsStr}) = <span style="color: var(--purple);">${formatInt(nwd)}</span>`;
+
+        if (nums.length === 2) {
+          const a = BigInt(nums[0]);
+          const b = BigInt(nums[1]);
+          const prod = a * b;
+          elNwdFormulaBox.innerHTML = `
+            <div><strong>Sprawdzenie szkolnego wzoru dla 2 liczb:</strong></div>
+            <div class="nwd-formula-math">NWW(a, b) = (a · b) : NWD(a, b)</div>
+            <div class="nwd-formula-math">NWW(${formatInt(a)}, ${formatInt(b)}) = (${formatInt(a)} · ${formatInt(b)}) : ${formatInt(nwd)} = ${formatInt(prod)} : ${formatInt(nwd)} = <span style="color: var(--green-dark);">${formatInt(nww)}</span> ✓</div>
+          `;
+        } else {
+          elNwdFormulaBox.innerHTML = `
+            <div><strong>Warto wiedzieć:</strong></div>
+            <div style="margin-top: 4px; color: var(--text-muted);">
+              Wzór <strong>NWW(a, b) = (a · b) : NWD(a, b)</strong> działa bezpośrednio dla 2 liczb. Dla 3 liczb (${numsStr}) najwygodniej korzystać z <strong>rozkładu na czynniki pierwsze</strong> lub <strong>wspólnej tabeli</strong>!
+            </div>
+          `;
+        }
+      }
+
+      // =========================================================
+      // GŁÓWNA FUNKCJA RENDERUJĄCA
+      // =========================================================
+
+      function renderAll() {
+        const model = state.model;
+        if (!model) return;
+
+        const steps = getActiveSteps();
+        const maxIdx = Math.max(0, steps.length - 1);
+        if (state.currentStep > maxIdx) state.currentStep = maxIdx;
+
+        const step = steps[state.currentStep];
+
+        // 1. Odznaki, licznik i pasek postępu
+        elStageBadge.textContent = step.stageLabel;
+        elStageBadge.className = `stage-badge stage-${step.stage}`;
+        elStepCounter.textContent = `Krok ${state.currentStep} / ${maxIdx}`;
+        const pct = maxIdx > 0 ? Math.round((state.currentStep / maxIdx) * 100) : 100;
+        elProgressFill.style.width = `${pct}%`;
+
+        // 2. Wizualizacja na kartce w kratkę
+        if (state.activeTab === 'separate') {
+          renderSeparateTab(model, step);
+        } else if (state.activeTab === 'table') {
+          renderSharedTableTab(model, step);
+        } else {
+          renderMultiplesTab(model, step);
+        }
+
+        // 3. Panel opisu słownego (uwzględniając przełącznik cech podzielności)
+        elExplanationCard.className = `explanation-card theme-${step.stage}`;
+        elExplanationTitle.textContent = step.title;
+
+        if (step.baseExplain) {
+          let html = '';
+          if (state.showDivisibility && step.divHintData) {
+            html += divisibilityHintHtml(step.divHintData.n, step.divHintData.p) + ' ';
+          }
+          html += step.baseExplain;
+          elExplanationBody.innerHTML = html;
+        } else {
+          elExplanationBody.innerHTML = step.explanationHtml;
+        }
+
+        // 4. Przyciski sterowania
+        elBtnStart.disabled = state.currentStep === 0;
+        elBtnPrev.disabled = state.currentStep === 0;
+        elBtnNext.disabled = state.currentStep >= maxIdx;
+        elBtnEnd.disabled = state.currentStep >= maxIdx;
+        elBtnPlay.disabled = maxIdx === 0;
+        updatePlayButtonUI();
+
+        // 5. Karta podsumowania
+        renderSummarySection(model);
+      }
+
+      // =========================================================
+      // WALIDACJA WEJŚCIA I OBSŁUGA STANU
+      // =========================================================
+
+      function showError(msg, invalidEls = []) {
+        [elN1, elN2, elN3].forEach(el => el.classList.remove('is-invalid'));
+        invalidEls.forEach(el => el.classList.add('is-invalid'));
+
+        if (msg) {
+          elErrorBox.innerHTML = msg;
+          elErrorBox.classList.add('visible');
+        } else {
+          elErrorBox.innerHTML = '';
+          elErrorBox.classList.remove('visible');
+        }
+      }
+
+      function parseAndValidate() {
+        const activeInputs = state.hasThird
+          ? [
+              { el: elN1, name: 'Pierwsza liczba' },
+              { el: elN2, name: 'Druga liczba' },
+              { el: elN3, name: 'Trzecia liczba' }
+            ]
+          : [
+              { el: elN1, name: 'Pierwsza liczba' },
+              { el: elN2, name: 'Druga liczba' }
+            ];
+
+        const parsedNums = [];
+
+        for (const item of activeInputs) {
+          const raw = item.el.value.trim().replace(/\s+/g, '');
+          if (raw === '') {
+            showError(`Pole <strong>„${item.name}”</strong> jest puste. Wpisz liczbę naturalną od 1 do 10 000.`, [item.el]);
+            return null;
+          }
+          if (raw.includes(',') || raw.includes('.')) {
+            showError(`Pole <strong>„${item.name}”</strong> zawiera ułamek. NWW wyznaczamy wyłącznie dla <strong>liczb naturalnych</strong> (całkowitych dodatnich).`, [item.el]);
+            return null;
+          }
+          if (/^-/.test(raw) || raw === '0') {
+            showError(`Pole <strong>„${item.name}”</strong> musi zawierać liczbę większą od zera (od <strong>1</strong> do <strong>10 000</strong>).`, [item.el]);
+            return null;
+          }
+          if (!/^\d+$/.test(raw)) {
+            showError(`Nieprawidłowy zapis w polu <strong>„${item.name}”</strong>. Wpisz wyłącznie cyfry.`, [item.el]);
+            return null;
+          }
+
+          const val = Number(raw);
+          if (!Number.isSafeInteger(val) || val < 1 || val > 10000) {
+            showError(`Liczba w polu <strong>„${item.name}”</strong> musi mieścić się w zakresie od <strong>1</strong> do <strong>10 000</strong>.`, [item.el]);
+            return null;
+          }
+          parsedNums.push(val);
+        }
+
+        showError('');
+        return parsedNums;
+      }
+
+      function handleCalculate() {
+        stopAutoPlay();
+        const nums = parseAndValidate();
+        if (!nums) return;
+
+        state.model = buildModel(nums);
+        state.currentStep = 0;
+        renderAll();
+      }
+
+      function setThirdField(visible, presetValue = null) {
+        state.hasThird = visible;
+        elGroupN3.style.display = visible ? 'flex' : 'none';
+        elBtnToggleThird.classList.toggle('is-remove', visible);
+        elBtnToggleThird.textContent = visible ? '× Usuń 3. liczbę' : '+ Dodaj 3. liczbę';
+
+        if (visible) {
+          if (presetValue !== null) {
+            elN3.value = String(presetValue);
+          } else if (elN3.value.trim() === '') {
+            elN3.value = '24';
+          }
+        }
+      }
+
+      function setActiveTab(tabName) {
+        stopAutoPlay();
+        state.activeTab = tabName;
+        state.currentStep = 0;
+
+        const tabs = [
+          { el: elTabSeparate, id: 'separate' },
+          { el: elTabTable, id: 'table' },
+          { el: elTabMultiples, id: 'multiples' }
+        ];
+        tabs.forEach(({ el, id }) => {
+          const active = id === tabName;
+          el.classList.toggle('is-active', active);
+          el.setAttribute('aria-selected', String(active));
+        });
+
+        renderAll();
+      }
+
+      // =========================================================
+      // STEROWANIE ODTWARZANIEM
+      // =========================================================
+
+      function stopAutoPlay() {
+        if (state.playTimer !== null) {
+          clearInterval(state.playTimer);
+          state.playTimer = null;
+        }
+        state.isPlaying = false;
+        updatePlayButtonUI();
+      }
+
+      function updatePlayButtonUI() {
+        if (state.isPlaying) {
+          elBtnPlay.textContent = '⏸ Pauza';
+          elBtnPlay.classList.add('is-playing');
+        } else {
+          elBtnPlay.textContent = '▶ Odtwarzaj';
+          elBtnPlay.classList.remove('is-playing');
+        }
+      }
+
+      function advanceOneStep() {
+        const steps = getActiveSteps();
+        const maxIdx = Math.max(0, steps.length - 1);
+        if (state.currentStep < maxIdx) {
+          state.currentStep++;
+          renderAll();
+          if (state.currentStep >= maxIdx) {
+            stopAutoPlay();
+          }
+        } else {
+          stopAutoPlay();
+        }
+      }
+
+      function toggleAutoPlay() {
+        const steps = getActiveSteps();
+        if (steps.length <= 1) return;
+
+        if (state.isPlaying) {
+          stopAutoPlay();
+          return;
+        }
+
+        if (state.currentStep >= steps.length - 1) {
+          state.currentStep = 0;
+          renderAll();
+        }
+
+        state.isPlaying = true;
+        updatePlayButtonUI();
+        advanceOneStep();
+
+        if (state.isPlaying) {
+          state.playTimer = setInterval(advanceOneStep, SPEED_MAP[state.speedLevel].ms);
+        }
+      }
+
+      // =========================================================
+      // ZDARZENIA (EVENT LISTENERS)
+      // =========================================================
+
+      elBtnToggleThird.addEventListener('click', () => {
+        setThirdField(!state.hasThird);
+        handleCalculate();
+      });
+
+      elBtnCalc.addEventListener('click', handleCalculate);
+
+      elBtnRandom.addEventListener('click', () => {
+        const pool = state.hasThird ? RANDOM_SETS_3 : RANDOM_SETS_2;
+        const currentKey = state.model ? state.model.nums.join(',') : '';
+        let pick = pool[Math.floor(Math.random() * pool.length)];
+        if (pick.join(',') === currentKey) {
+          pick = pool[(pool.indexOf(pick) + 1) % pool.length];
+        }
+        elN1.value = String(pick[0]);
+        elN2.value = String(pick[1]);
+        if (state.hasThird && pick[2] !== undefined) {
+          elN3.value = String(pick[2]);
+        }
+        handleCalculate();
+      });
+
+      [elN1, elN2, elN3].forEach((input) => {
+        input.addEventListener('input', () => input.classList.remove('is-invalid'));
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleCalculate();
+          }
+        });
+      });
+
+      // Gotowe przykłady
+      document.querySelectorAll('.btn-preset').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const vals = btn.getAttribute('data-nums').split(',').map(Number);
+          elN1.value = String(vals[0]);
+          elN2.value = String(vals[1]);
+          if (vals.length === 3) {
+            setThirdField(true, vals[2]);
+          } else {
+            setThirdField(false);
+          }
+          handleCalculate();
+        });
+      });
+
+      // Przełączniki opcji
+      elOptPowers.addEventListener('change', () => {
+        state.showPowers = elOptPowers.checked;
+        renderAll();
+      });
+
+      elOptDivisibility.addEventListener('change', () => {
+        state.showDivisibility = elOptDivisibility.checked;
+        renderAll();
+      });
+
+      // Zakładki metod
+      elTabSeparate.addEventListener('click', () => setActiveTab('separate'));
+      elTabTable.addEventListener('click', () => setActiveTab('table'));
+      elTabMultiples.addEventListener('click', () => setActiveTab('multiples'));
+
+      // Przyciski nawigacji kroków
+      elBtnStart.addEventListener('click', () => {
+        stopAutoPlay();
+        state.currentStep = 0;
+        renderAll();
+      });
+
+      elBtnPrev.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.currentStep > 0) {
+          state.currentStep--;
+          renderAll();
+        }
+      });
+
+      elBtnPlay.addEventListener('click', toggleAutoPlay);
+
+      elBtnNext.addEventListener('click', () => {
+        stopAutoPlay();
+        const steps = getActiveSteps();
+        if (state.currentStep < steps.length - 1) {
+          state.currentStep++;
+          renderAll();
+        }
+      });
+
+      elBtnEnd.addEventListener('click', () => {
+        stopAutoPlay();
+        const steps = getActiveSteps();
+        if (steps.length > 0) {
+          state.currentStep = steps.length - 1;
+          renderAll();
+        }
+      });
+
+      // Suwak tempa
+      elSpeedSlider.addEventListener('input', () => {
+        state.speedLevel = Number(elSpeedSlider.value);
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        if (state.isPlaying) {
+          stopAutoPlay();
+          toggleAutoPlay();
+        }
+      });
+
+      // Skróty klawiszowe (←, →, Spacja — zablokowane gdy fokus w polu input)
+      document.addEventListener('keydown', (e) => {
+        const tag = document.activeElement ? document.activeElement.tagName : '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+          return;
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          elBtnNext.click();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          elBtnPrev.click();
+        } else if (e.code === 'Space') {
+          e.preventDefault();
+          toggleAutoPlay();
+        }
+      });
+
+      // Inicjalizacja aplikacji
+      window.addEventListener('load', () => {
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        handleCalculate();
+      });
+    })();
+  </script>
+</body>
+</html>

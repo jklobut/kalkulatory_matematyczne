@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator rozkładu liczby na czynniki pierwsze</title>
+  <style>
+    /* =========================================================
+       ZMIENNE KOLORYSTYCZNE I TYPOGRAFIA (100% OFFLINE)
+       ========================================================= */
+    :root {
+      --bg-page: #f1f5f9;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-soft: #e2e8f0;
+
+      /* Kolory dydaktyczne */
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --primary-border: #bfdbfe;
+
+      --prime-color: #047857;
+      --prime-bg: #d1fae5;
+      --prime-border: #10b981;
+      --prime-dark: #065f46;
+
+      --active-bg: #fef3c7;
+      --active-border: #f59e0b;
+      --active-text: #92400e;
+
+      --info-bg: #fffbeb;
+      --info-border: #fcd34d;
+      --info-text: #92400e;
+
+      --error-bg: #fef2f2;
+      --error-border: #fca5a5;
+      --error-text: #991b1b;
+
+      /* Kartka w kratkę z zeszytu */
+      --paper-bg: #fffef9;
+      --paper-grid: #d4e4f4;
+      --paper-margin: #fca5a5;
+      --grid-step: 26px;
+
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 20px 16px 48px;
+    }
+
+    /* =========================================================
+       UKŁAD GŁÓWNY I NAGŁÓWEK
+       ========================================================= */
+    .app-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .app-title-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .app-logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #2563eb, #059669);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      flex-shrink: 0;
+    }
+
+    .app-header h1 {
+      font-size: clamp(1.35rem, 3vw, 1.95rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .app-subtitle {
+      color: var(--text-muted);
+      font-size: 0.96rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 365px 1fr;
+      gap: 22px;
+      align-items: start;
+      margin-bottom: 22px;
+    }
+
+    @media (max-width: 960px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* =========================================================
+       KARTY (PANELE)
+       ========================================================= */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-md);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 1.04rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text-main);
+    }
+
+    /* =========================================================
+       LEWY PANEL: WPROWADZANIE LICZBY I PRZYKŁADY
+       ========================================================= */
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .field-sub {
+      font-size: 0.76rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .number-input {
+      width: 100%;
+      padding: 11px 14px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      background: #f8fafc;
+      border: 2px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      transition: border-color 0.15s, background-color 0.15s;
+      margin-bottom: 10px;
+    }
+
+    .number-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #ffffff;
+    }
+
+    .number-input.is-invalid {
+      border-color: #dc2626;
+      background: var(--error-bg);
+    }
+
+    .number-input.is-info {
+      border-color: #f59e0b;
+      background: var(--info-bg);
+    }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.93rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+      flex: 1;
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.24);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: #f8fafc;
+      color: var(--text-main);
+      border-color: #cbd5e1;
+    }
+
+    .btn-secondary:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .message-box {
+      display: none;
+      padding: 11px 13px;
+      border-radius: var(--radius-sm);
+      font-size: 0.87rem;
+      line-height: 1.48;
+      margin-bottom: 14px;
+    }
+
+    .message-box.visible {
+      display: block;
+    }
+
+    .message-box.is-error {
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      border-left: 4px solid #dc2626;
+      color: var(--error-text);
+    }
+
+    .message-box.is-edu {
+      background: var(--info-bg);
+      border: 1px solid var(--info-border);
+      border-left: 4px solid #f59e0b;
+      color: var(--info-text);
+    }
+
+    .presets-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .btn-preset {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid var(--primary-border);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-family: var(--font-sans);
+    }
+
+    .btn-preset strong {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.9rem;
+      color: #1e3a8a;
+    }
+
+    .btn-preset span {
+      font-size: 0.74rem;
+      color: #3b82f6;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-preset:hover {
+      background: #dbeafe;
+      transform: translateY(-1px);
+    }
+
+    .options-box {
+      border-top: 1px solid var(--border-soft);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      line-height: 1.35;
+    }
+
+    .toggle-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* =========================================================
+       PRAWY PANEL: ZAKŁADKI, PASEK POSTĘPU, OBSZAR ROBOCZY
+       ========================================================= */
+    .viz-top-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .view-tabs {
+      display: inline-flex;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-soft);
+      gap: 4px;
+    }
+
+    .view-tab {
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .view-tab:hover {
+      color: var(--text-main);
+    }
+
+    .view-tab.is-active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .badges-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stage-badge {
+      display: inline-flex;
+      align-items: center;
+      font-weight: 800;
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border: 1px solid transparent;
+    }
+
+    .stage-start { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .stage-step { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .stage-done { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+
+    .step-counter {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb, #10b981);
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    /* Kartka w kratkę (tło dla obu trybów wizualizacji) */
+    .notebook-shell {
+      position: relative;
+      background-color: var(--paper-bg);
+      background-image:
+        linear-gradient(to right, var(--paper-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--paper-grid) 1px, transparent 1px);
+      background-size: var(--grid-step) var(--grid-step);
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.05), var(--shadow-sm);
+      overflow-x: auto;
+      padding: 24px 24px 28px 48px;
+      margin-bottom: 16px;
+      min-height: 290px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .notebook-shell::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 30px;
+      width: 2px;
+      background-color: var(--paper-margin);
+      opacity: 0.72;
+      pointer-events: none;
+    }
+
+    /* =========================================================
+       ZAKŁADKA 1: METODA PIONOWEJ KRESKI
+       ========================================================= */
+    .bar-view {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .bar-table {
+      display: grid;
+      grid-template-columns: minmax(110px, auto) 4px minmax(84px, auto) minmax(140px, auto);
+      align-items: center;
+      row-gap: 4px;
+      padding: 6px 0;
+    }
+
+    .bar-left {
+      text-align: right;
+      padding: 5px 16px 5px 10px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1e3a8a;
+      border-radius: var(--radius-sm);
+      transition: all 0.22s ease;
+    }
+
+    .bar-left.is-active-dividend {
+      background: var(--active-bg);
+      color: var(--active-text);
+      box-shadow: inset 0 0 0 2px var(--active-border);
+    }
+
+    .bar-left.is-end-one {
+      color: var(--prime-dark);
+    }
+
+    .bar-left.is-end-one span {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      background: #ecfdf5;
+      border: 2px dashed var(--prime-border);
+      padding: 0 8px;
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .bar-left.is-new-quotient {
+      animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .bar-divider {
+      width: 4px;
+      align-self: stretch;
+      background: #0f172a;
+      border-radius: 2px;
+      min-height: 44px;
+    }
+
+    .bar-right {
+      padding: 5px 10px 5px 16px;
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+    }
+
+    .prime-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+      height: 40px;
+      padding: 0 11px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.38rem;
+      font-weight: 800;
+      background: var(--prime-bg);
+      color: var(--prime-dark);
+      border: 2px solid var(--prime-border);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .prime-badge.is-active-factor {
+      background: #059669;
+      color: #ffffff;
+      border-color: #065f46;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.26);
+      animation: popIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .bar-hint {
+      padding-left: 10px;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .div-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--active-bg);
+      border: 1.5px solid var(--active-border);
+      color: var(--active-text);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.88rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+      animation: fadeSlideIn 0.28s ease;
+    }
+
+    .end-pill {
+      display: inline-flex;
+      align-items: center;
+      background: #ecfdf5;
+      border: 1.5px solid #6ee7b7;
+      color: #065f46;
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+      animation: fadeSlideIn 0.28s ease;
+    }
+
+    /* =========================================================
+       ZAKŁADKA 2: DRZEWKO ROZKŁADU (SVG)
+       ========================================================= */
+    .tree-view {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow-x: auto;
+    }
+
+    .tree-svg {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    .tree-branch {
+      stroke: #64748b;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      transition: stroke 0.25s ease;
+    }
+
+    .tree-branch.is-active {
+      stroke: #d97706;
+      stroke-width: 3.5;
+    }
+
+    .tree-node-anim {
+      animation: popInSvg 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .tree-text {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      text-anchor: middle;
+      dominant-baseline: central;
+      user-select: none;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes popInSvg {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes fadeSlideIn {
+      0% { transform: translateX(-8px); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+
+    /* =========================================================
+       KARTA WYJAŚNIENIA DYDAKTYCZNEGO
+       ========================================================= */
+    .explanation-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid var(--primary);
+      border-radius: var(--radius-md);
+      padding: 15px 18px;
+      margin-bottom: 16px;
+      min-height: 106px;
+      transition: border-left-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .explanation-card.theme-step {
+      background: #fffbeb;
+      border-color: #fde68a;
+      border-left-color: #f59e0b;
+    }
+
+    .explanation-card.theme-done {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      border-left-color: #059669;
+    }
+
+    .explanation-title {
+      font-size: 0.86rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .explanation-card.theme-step .explanation-title { color: #b45309; }
+    .explanation-card.theme-done .explanation-title { color: #047857; }
+
+    .explanation-body {
+      font-size: 0.99rem;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    .chip {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-size: 0.96em;
+    }
+
+    .chip-blue { background: #dbeafe; color: #1e3a8a; }
+    .chip-green { background: #d1fae5; color: #065f46; }
+    .chip-amber { background: #fef3c7; color: #92400e; }
+    .chip-num { background: #e2e8f0; color: #0f172a; }
+
+    /* Kolorowe pigułki grup czynników pierwszych w podsumowaniu */
+    .factor-chip {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 6px;
+      margin: 2px 1px;
+    }
+
+    .fc-0 { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .fc-1 { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+    .fc-2 { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+    .fc-3 { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
+    .fc-4 { background: #ffe4e6; color: #9f1239; border: 1px solid #fda4af; }
+    .fc-5 { background: #ccfbf1; color: #115e59; border: 1px solid #5eead4; }
+
+    .dot-sep {
+      font-weight: 900;
+      color: #64748b;
+      margin: 0 3px;
+    }
+
+    /* =========================================================
+       STEROWANIE ODTWARZANIEM I SUWAK TEMPA
+       ========================================================= */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .btn-ctrl {
+      padding: 10px 13px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-ctrl:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }
+
+    .btn-ctrl:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ctrl-primary {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .btn-ctrl-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .btn-ctrl-play {
+      background: #0f766e;
+      color: #ffffff;
+      border-color: #0f766e;
+      min-width: 120px;
+    }
+
+    .btn-ctrl-play:hover:not(:disabled) {
+      background: #115e59;
+      border-color: #115e59;
+    }
+
+    .btn-ctrl-play.is-playing {
+      background: #d97706;
+      border-color: #d97706;
+    }
+
+    .btn-ctrl-play.is-playing:hover:not(:disabled) {
+      background: #b45309;
+      border-color: #b45309;
+    }
+
+    .speed-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+    }
+
+    .speed-slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .speed-slider {
+      width: 130px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .speed-label-pill {
+      min-width: 68px;
+      text-align: center;
+      background: #e2e8f0;
+      color: var(--text-main);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .shortcuts-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    /* =========================================================
+       KARTA PODSUMOWANIA I ŚCIĄGAWKA EDUKACYJNA
+       ========================================================= */
+    .bottom-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .summary-card {
+      border-top: 4px solid #10b981;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .summary-tile {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+    }
+
+    .summary-tile-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .summary-tile-value {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.08rem;
+      font-weight: 800;
+      color: var(--text-main);
+      word-break: break-word;
+      line-height: 1.5;
+    }
+
+    .summary-tile-value sup {
+      font-size: 0.72em;
+      vertical-align: super;
+      line-height: 0;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .status-prime {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+    }
+
+    .status-composite {
+      background: #dbeafe;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+    }
+
+    /* Rozwijane sekcje (<details>) */
+    .edu-details {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .edu-details summary {
+      padding: 12px 16px;
+      font-size: 0.94rem;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      transition: background-color 0.15s;
+    }
+
+    .edu-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .edu-details summary:hover {
+      background: #f1f5f9;
+    }
+
+    .edu-details summary::after {
+      content: "▾";
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+
+    .edu-details[open] summary::after {
+      transform: rotate(180deg);
+    }
+
+    .edu-details-body {
+      padding: 14px 16px 18px;
+      border-top: 1px solid var(--border-soft);
+      background: #ffffff;
+    }
+
+    .divisors-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .divisor-pill {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.86rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+    }
+
+    .divisor-pill.is-prime-div {
+      background: #ecfdf5;
+      color: #065f46;
+      border-color: #6ee7b7;
+    }
+
+    /* Ściągawka */
+    .cheatsheet-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 820px) {
+      .cheatsheet-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .cheat-section-title {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .rules-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .rules-list li {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .rule-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 24px;
+      padding: 0 6px;
+      border-radius: 6px;
+      background: var(--primary);
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 0.85rem;
+      margin-right: 6px;
+    }
+
+    .primes-100-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .prime-100-cell {
+      background: #ecfdf5;
+      border: 1.5px solid #6ee7b7;
+      color: #065f46;
+      border-radius: var(--radius-sm);
+      padding: 7px 4px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.98rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .prime-100-cell:hover {
+      background: #10b981;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .cheat-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* =========================================================
+       RESPONSYWNOŚĆ (TELEFON / TABLET)
+       ========================================================= */
+    @media (max-width: 600px) {
+      body {
+        padding: 14px 10px 34px;
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .notebook-shell {
+        padding: 18px 14px 22px 34px;
+        min-height: 240px;
+      }
+
+      .notebook-shell::before {
+        left: 20px;
+      }
+
+      .bar-table {
+        grid-template-columns: minmax(78px, auto) 4px minmax(64px, auto) minmax(96px, auto);
+      }
+
+      .bar-left {
+        font-size: 1.25rem;
+        padding: 4px 10px 4px 6px;
+      }
+
+      .prime-badge {
+        min-width: 34px;
+        height: 34px;
+        font-size: 1.15rem;
+      }
+
+      .div-pill, .end-pill {
+        font-size: 0.76rem;
+        padding: 3px 7px;
+      }
+
+      .controls-bar {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      #btn-end {
+        grid-column: span 2;
+      }
+
+      .shortcuts-hint {
+        display: none;
+      }
+    }
+  
+    /* =========================================================
+       PRZYCISK POWROTU DO MENU GŁÓWNEGO
+       ========================================================= */
+    .top-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .btn-back-menu {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 15px;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #1e293b;
+      border: 1.5px solid #cbd5e1;
+      text-decoration: none;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-back-menu:hover,
+    .btn-back-menu:focus-visible {
+      background: #eff6ff;
+      border-color: #2563eb;
+      color: #2563eb;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <nav class="top-nav-bar" aria-label="Nawigacja główna">
+      <a href="index.html" class="btn-back-menu" title="Wróć do menu głównego">← Menu</a>
+    </nav>
+
+    <!-- NAGŁÓWEK -->
+    <header class="app-header">
+      <div class="app-title-row">
+        <div class="app-logo" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="3" x2="12" y2="21"></line>
+            <circle cx="17.5" cy="7.5" r="2.5"></circle>
+            <circle cx="17.5" cy="15.5" r="2.5"></circle>
+            <line x1="4" y1="7.5" x2="8.5" y2="7.5"></line>
+            <line x1="4" y1="15.5" x2="8.5" y2="15.5"></line>
+          </svg>
+        </div>
+        <h1>Kalkulator rozkładu liczby na czynniki pierwsze</h1>
+      </div>
+      <p class="app-subtitle">Zobacz krok po kroku, jak rozłożyć liczbę naturalną na czynniki pierwsze metodą pionowej kreski oraz na drzewku rozkładu.</p>
+    </header>
+
+    <main class="main-grid">
+      <!-- LEWY PANEL: WPROWADZANIE LICZBY I OPCJE -->
+      <section class="card" aria-label="Wprowadzanie liczby">
+        <h2 class="card-title">1. Wpisz liczbę naturalną</h2>
+
+        <label class="field-label" for="input-number">
+          <span>Liczba do rozkładu</span>
+          <span class="field-sub">od 2 do 10 000 000</span>
+        </label>
+        <input type="text" id="input-number" class="number-input" inputmode="numeric" value="120" placeholder="np. 120" autocomplete="off">
+
+        <div class="action-row">
+          <button type="button" id="btn-factorize" class="btn btn-primary">Rozłóż liczbę</button>
+          <button type="button" id="btn-random" class="btn btn-secondary" title="Wylosuj ciekawą liczbę do przećwiczenia">🎲 Losuj</button>
+        </div>
+
+        <div id="message-box" class="message-box" role="alert"></div>
+
+        <div class="presets-label">Gotowe przykłady:</div>
+        <div class="presets-grid">
+          <button type="button" class="btn-preset" data-val="36"><strong>36</strong><span>prosty</span></button>
+          <button type="button" class="btn-preset" data-val="120"><strong>120</strong><span>klasyczny</span></button>
+          <button type="button" class="btn-preset" data-val="360"><strong>360</strong><span>dużo czynników</span></button>
+          <button type="button" class="btn-preset" data-val="97"><strong>97</strong><span>pierwsza</span></button>
+          <button type="button" class="btn-preset" data-val="1024"><strong>1024</strong><span>potęga 2</span></button>
+          <button type="button" class="btn-preset" data-val="2310"><strong>2310</strong><span>kolejne pierwsze</span></button>
+        </div>
+
+        <div class="options-box">
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-divisibility" checked>
+            <span>Pokazuj cechy podzielności w opisach kroków</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-powers" checked>
+            <span>Pokaż zapis potęgowy wyniku</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- PRAWY PANEL: WIZUALIZACJA I STEROWANIE -->
+      <section class="card" aria-label="Wizualizacja rozkładu">
+        <div class="viz-top-row">
+          <div class="view-tabs" role="tablist" aria-label="Tryb wizualizacji">
+            <button type="button" id="tab-bar" class="view-tab is-active" role="tab" aria-selected="true">Metoda pionowej kreski</button>
+            <button type="button" id="tab-tree" class="view-tab" role="tab" aria-selected="false">Drzewko rozkładu</button>
+          </div>
+          <div class="badges-group">
+            <span id="stage-badge" class="stage-badge stage-start">Start</span>
+            <span id="step-counter" class="step-counter">Krok 0 z 0</span>
+          </div>
+        </div>
+
+        <!-- PASEK POSTĘPU -->
+        <div class="progress-track" aria-hidden="true">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+
+        <!-- KARTKA W KRATKĘ (WSPÓLNA DLA KRESKI I DRZEWKA) -->
+        <div class="notebook-shell">
+          <div id="bar-view" class="bar-view" aria-live="polite"></div>
+          <div id="tree-view" class="tree-view" style="display: none;" aria-live="polite"></div>
+        </div>
+
+        <!-- PANEL OBJAŚNIENIA DYDAKTYCZNEGO -->
+        <div id="explanation-card" class="explanation-card">
+          <div id="explanation-title" class="explanation-title">Start</div>
+          <div id="explanation-body" class="explanation-body"></div>
+        </div>
+
+        <!-- PRZYCISKI STEROWANIA -->
+        <div class="controls-bar">
+          <button type="button" id="btn-start" class="btn-ctrl" title="Wróć na początek">⏮ Początek</button>
+          <button type="button" id="btn-prev" class="btn-ctrl" title="Poprzedni krok (Strzałka w lewo)">◀ Poprzedni</button>
+          <button type="button" id="btn-play" class="btn-ctrl btn-ctrl-play" title="Odtwórz / Pauza (Spacja)">▶ Odtwórz</button>
+          <button type="button" id="btn-next" class="btn-ctrl btn-ctrl-primary" title="Następny krok (Strzałka w prawo)">Następny ▶</button>
+          <button type="button" id="btn-end" class="btn-ctrl" title="Przejdź do końca">Koniec ⏭</button>
+        </div>
+
+        <!-- SUWAK TEMPA I SKRÓTY -->
+        <div class="speed-row">
+          <label class="speed-slider-wrap" for="speed-slider">
+            <span>Tempo animacji:</span>
+            <input type="range" id="speed-slider" class="speed-slider" min="1" max="3" step="1" value="2">
+            <span id="speed-label" class="speed-label-pill">Średnio</span>
+          </label>
+          <div class="shortcuts-hint">
+            Skróty: <span class="kbd">←</span> <span class="kbd">→</span> krok, <span class="kbd">Spacja</span> odtwórz/pauza
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- DOLNE SEKCJE: PODSUMOWANIE I ŚCIĄGAWKA -->
+    <div class="bottom-stack">
+      <!-- KARTA PODSUMOWANIA WYNIKU -->
+      <section id="summary-card" class="card summary-card" aria-label="Podsumowanie rozkładu">
+        <h2 class="card-title">Podsumowanie rozkładu liczby <span id="sum-number-title">120</span></h2>
+
+        <div class="summary-grid">
+          <div class="summary-tile">
+            <div class="summary-tile-label">Iloczyn czynników pierwszych</div>
+            <div id="sum-product" class="summary-tile-value"></div>
+          </div>
+
+          <div id="sum-power-tile" class="summary-tile">
+            <div class="summary-tile-label">Zapis potęgowy</div>
+            <div id="sum-power" class="summary-tile-value"></div>
+          </div>
+
+          <div class="summary-tile">
+            <div class="summary-tile-label">Rodzaj liczby</div>
+            <div id="sum-type" class="summary-tile-value"></div>
+          </div>
+
+          <div class="summary-tile">
+            <div class="summary-tile-label">Liczba wszystkich dzielników</div>
+            <div id="sum-div-count" class="summary-tile-value"></div>
+          </div>
+        </div>
+
+        <details id="divisors-details" class="edu-details">
+          <summary id="divisors-summary">Pokaż wszystkie dzielniki naturalne</summary>
+          <div id="divisors-body" class="edu-details-body"></div>
+        </details>
+      </section>
+
+      <!-- ŚCIĄGAWKA EDUKACYJNA -->
+      <section class="card" aria-label="Ściągawka matematyczna">
+        <details class="edu-details">
+          <summary>📘 Ściągawka: cechy podzielności i liczby pierwsze do 100</summary>
+          <div class="edu-details-body">
+            <div class="cheatsheet-grid">
+              <div>
+                <h3 class="cheat-section-title">Cechy podzielności</h3>
+                <ul class="rules-list">
+                  <li><span class="rule-badge">2</span> Liczba dzieli się przez 2, gdy jest <strong>parzysta</strong> (jej ostatnia cyfra to 0, 2, 4, 6 lub 8). <em>Np. 124, 360.</em></li>
+                  <li><span class="rule-badge">3</span> Liczba dzieli się przez 3, gdy <strong>suma jej cyfr</strong> dzieli się przez 3. <em>Np. 123 (1+2+3=6).</em></li>
+                  <li><span class="rule-badge">5</span> Liczba dzieli się przez 5, gdy jej <strong>ostatnia cyfra to 0 lub 5</strong>. <em>Np. 45, 230.</em></li>
+                  <li><span class="rule-badge">9</span> Liczba dzieli się przez 9, gdy <strong>suma jej cyfr</strong> dzieli się przez 9. <em>Np. 738 (7+3+8=18).</em></li>
+                  <li><span class="rule-badge">10</span> Liczba dzieli się przez 10, gdy jej <strong>ostatnia cyfra to 0</strong>. <em>Np. 120, 2310.</em></li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 class="cheat-section-title">Wszystkie 25 liczb pierwszych mniejszych od 100</h3>
+                <div id="primes-100-grid" class="primes-100-grid"></div>
+                <p class="cheat-note">Wskazówka: kliknij dowolną liczbę pierwszą powyżej, aby sprawdzić jej rozkład w kalkulatorze! Pamiętaj, że <strong>2</strong> to jedyna parzysta liczba pierwsza.</p>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * KALKULATOR ROZKŁADU LICZBY NA CZYNNIKI PIERWSZE
+     * W 100% samodzielny silnik obliczeń i wizualizacji (metoda pionowej kreski + drzewko SVG).
+     */
+    (function () {
+      'use strict';
+
+      // =========================================================
+      // STAŁE EDUKACYJNE I KONFIGURACJA
+      // =========================================================
+      const PRIMES_UNDER_100 = [
+        2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
+        31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
+        73, 79, 83, 89, 97
+      ];
+
+      const RANDOM_POOL = [
+        24, 42, 48, 54, 60, 72, 75, 84, 90, 96, 105, 108, 126, 132, 144, 150,
+        168, 180, 196, 210, 225, 240, 252, 270, 288, 300, 315, 330, 385, 420,
+        450, 462, 504, 540, 600, 630, 720, 756, 840, 900, 1050, 1155, 1260,
+        1512, 1800, 2100, 2520, 49, 121, 169, 289, 53, 83, 101, 127
+      ];
+
+      const SPEED_MAP = {
+        1: { label: 'Wolno', ms: 2300 },
+        2: { label: 'Średnio', ms: 1400 },
+        3: { label: 'Szybko', ms: 720 }
+      };
+
+      // =========================================================
+      // STAN APLIKACJI
+      // =========================================================
+      const state = {
+        viewMode: 'bar',       // 'bar' | 'tree'
+        showDivisibility: true,
+        showPowers: true,
+        model: null,
+        currentStep: 0,
+        isPlaying: false,
+        playTimer: null,
+        speedLevel: 2
+      };
+
+      // =========================================================
+      // REFERENCJE DO ELEMENTÓW DOM
+      // =========================================================
+      const elInput = document.getElementById('input-number');
+      const elBtnFactorize = document.getElementById('btn-factorize');
+      const elBtnRandom = document.getElementById('btn-random');
+      const elMessageBox = document.getElementById('message-box');
+      const elOptDivisibility = document.getElementById('opt-divisibility');
+      const elOptPowers = document.getElementById('opt-powers');
+
+      const elTabBar = document.getElementById('tab-bar');
+      const elTabTree = document.getElementById('tab-tree');
+      const elStageBadge = document.getElementById('stage-badge');
+      const elStepCounter = document.getElementById('step-counter');
+      const elProgressFill = document.getElementById('progress-fill');
+      const elBarView = document.getElementById('bar-view');
+      const elTreeView = document.getElementById('tree-view');
+
+      const elExplanationCard = document.getElementById('explanation-card');
+      const elExplanationTitle = document.getElementById('explanation-title');
+      const elExplanationBody = document.getElementById('explanation-body');
+
+      const elBtnStart = document.getElementById('btn-start');
+      const elBtnPrev = document.getElementById('btn-prev');
+      const elBtnPlay = document.getElementById('btn-play');
+      const elBtnNext = document.getElementById('btn-next');
+      const elBtnEnd = document.getElementById('btn-end');
+      const elSpeedSlider = document.getElementById('speed-slider');
+      const elSpeedLabel = document.getElementById('speed-label');
+
+      const elSumNumberTitle = document.getElementById('sum-number-title');
+      const elSumProduct = document.getElementById('sum-product');
+      const elSumPowerTile = document.getElementById('sum-power-tile');
+      const elSumPower = document.getElementById('sum-power');
+      const elSumType = document.getElementById('sum-type');
+      const elSumDivCount = document.getElementById('sum-div-count');
+      const elDivisorsSummary = document.getElementById('divisors-summary');
+      const elDivisorsBody = document.getElementById('divisors-body');
+      const elPrimes100Grid = document.getElementById('primes-100-grid');
+
+      // =========================================================
+      // FUNKCJE MATEMATYCZNE I POMOCNICZE
+      // =========================================================
+
+      /**
+       * Formatuje liczbę całkowitą z polską spacją co 3 cyfry (np. 10 000 000).
+       */
+      function formatInt(n) {
+        return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+      }
+
+      /**
+       * Znajduje najmniejszy dzielnik pierwszy liczby naturalnej n >= 2.
+       */
+      function smallestPrimeFactor(n) {
+        if (n % 2 === 0) return 2;
+        if (n % 3 === 0) return 3;
+        const limit = Math.floor(Math.sqrt(n));
+        for (let i = 5; i <= limit; i += 6) {
+          if (n % i === 0) return i;
+          if (n % (i + 2) === 0) return i + 2;
+        }
+        return n;
+      }
+
+      /**
+       * Sprawdza, czy liczba jest pierwsza.
+       */
+      function isPrime(n) {
+        return n >= 2 && smallestPrimeFactor(n) === n;
+      }
+
+      /**
+       * Wyznacza wszystkie dzielniki naturalne (wywoływane tylko gdy łączna liczba dzielników <= 200).
+       */
+      function computeAllDivisors(groupedFactors) {
+        let divisors = [1];
+        for (const { prime, exp } of groupedFactors) {
+          const next = [];
+          let pPow = 1;
+          for (let e = 0; e <= exp; e++) {
+            for (const d of divisors) {
+              next.push(d * pPow);
+            }
+            pPow *= prime;
+          }
+          divisors = next;
+        }
+        return divisors.sort((a, b) => a - b);
+      }
+
+      /**
+       * Buduje dydaktyczne wyjaśnienie cechy podzielności dla kroku `n : p = q`.
+       */
+      function buildDivisibilityReason(n, p, q, isInitialNumber) {
+        const nStr = formatInt(n);
+        const pStr = formatInt(p);
+
+        // Gdy n jest liczbą pierwszą (p === n)
+        if (p === n) {
+          if (isInitialNumber) {
+            const sqrtFloor = Math.floor(Math.sqrt(n));
+            return `Sprawdziliśmy kolejne liczby pierwsze aż do √${nStr} (czyli do ${formatInt(sqrtFloor)}) — żadna z nich nie dzieli <span class="chip chip-blue">${nStr}</span> bez reszty. Oznacza to, że <span class="chip chip-green">${nStr}</span> jest <strong>liczbą pierwszą</strong> (dzieli się tylko przez 1 i samą siebie).`;
+          }
+          return `Pozostała liczba <span class="chip chip-green">${nStr}</span> jest <strong>liczbą pierwszą</strong> — dzieli się tylko przez 1 i samą siebie.`;
+        }
+
+        if (p === 2) {
+          const lastDigit = n % 10;
+          return `Liczba <span class="chip chip-blue">${nStr}</span> jest <strong>parzysta</strong> (kończy się cyfrą <span class="chip chip-amber">${lastDigit}</span>), więc dzieli się przez <span class="chip chip-green">2</span>.`;
+        }
+
+        if (p === 3) {
+          const digits = String(n).split('').map(Number);
+          const sum = digits.reduce((acc, d) => acc + d, 0);
+          const sumExpr = digits.length > 1 ? `${digits.join(' + ')} = ${sum}` : `${sum}`;
+          return `Liczba <span class="chip chip-blue">${nStr}</span> nie jest parzysta, ale <strong>suma jej cyfr</strong> wynosi <span class="chip chip-amber">${sumExpr}</span>, co dzieli się przez 3 — więc cała liczba dzieli się przez <span class="chip chip-green">3</span>.`;
+        }
+
+        if (p === 5) {
+          const lastDigit = n % 10;
+          return `Liczba <span class="chip chip-blue">${nStr}</span> nie dzieli się przez 2 ani 3, ale kończy się cyfrą <span class="chip chip-amber">${lastDigit}</span>, więc na pewno dzieli się przez <span class="chip chip-green">5</span>.`;
+        }
+
+        // Dla 7, 11, 13 i większych liczb pierwszych
+        const smallerPrimes = PRIMES_UNDER_100.filter(x => x < p).slice(0, 5);
+        const smallerStr = smallerPrimes.join(', ') + (p > 13 ? '...' : '');
+        return `Liczba <span class="chip chip-blue">${nStr}</span> nie dzieli się przez mniejsze liczby pierwsze (${smallerStr}). Sprawdzamy kolejną liczbę pierwszą <span class="chip chip-green">${pStr}</span> — dzieli ona <span class="chip chip-blue">${nStr}</span> bez reszty!`;
+      }
+
+      /**
+       * Buduje kolorowy HTML iloczynu czynników pierwszych (każdy unikalny czynnik ma swój spójny kolor).
+       */
+      function buildColoredProductHtml(factors, primeColorMap) {
+        return factors
+          .map(p => `<span class="factor-chip fc-${primeColorMap.get(p)}">${formatInt(p)}</span>`)
+          .join('<span class="dot-sep">·</span>');
+      }
+
+      /**
+       * Buduje kolorowy HTML zapisu potęgowego z <sup>.
+       */
+      function buildColoredPowerHtml(grouped, primeColorMap) {
+        return grouped
+          .map(({ prime, exp }) => {
+            const cls = `factor-chip fc-${primeColorMap.get(prime)}`;
+            const expHtml = exp > 1 ? `<sup>${exp}</sup>` : '';
+            return `<span class="${cls}">${formatInt(prime)}${expHtml}</span>`;
+          })
+          .join('<span class="dot-sep">·</span>');
+      }
+
+      // =========================================================
+      // SILNIK ROZKŁADU I GENEROWANIA KROKÓW
+      // =========================================================
+
+      function buildFactorizationModel(n) {
+        const divisions = []; // { dividend, factor, quotient }
+        let curr = n;
+        while (curr > 1) {
+          const p = smallestPrimeFactor(curr);
+          const q = curr / p;
+          divisions.push({ dividend: curr, factor: p, quotient: q });
+          curr = q;
+        }
+
+        const factors = divisions.map(d => d.factor);
+        const grouped = [];
+        for (const p of factors) {
+          if (grouped.length > 0 && grouped[grouped.length - 1].prime === p) {
+            grouped[grouped.length - 1].exp++;
+          } else {
+            grouped.push({ prime: p, exp: 1 });
+          }
+        }
+
+        // Mapa kolorów dla unikalnych czynników pierwszych (do powiązania w podsumowaniu)
+        const primeColorMap = new Map();
+        grouped.forEach((g, idx) => {
+          primeColorMap.set(g.prime, idx % 6);
+        });
+
+        const isNumberPrime = factors.length === 1;
+        const totalDivisorsCount = grouped.reduce((acc, g) => acc * (g.exp + 1), 1);
+        const allDivisors = totalDivisorsCount <= 200 ? computeAllDivisors(grouped) : null;
+
+        // Generowanie kroków:
+        // Krok 0: Start (pokazujemy samą liczbę n)
+        // Kroki 1..k: wykonanie dzielenia nr i (indeks i - 1 w divisions)
+        // Krok k + 1: Podsumowanie końcowe
+        const steps = [];
+
+        steps.push({
+          type: 'start',
+          divIdx: -1,
+          title: `Krok 0: Liczba startowa ${formatInt(n)}`,
+          stageLabel: 'Start'
+        });
+
+        divisions.forEach((d, idx) => {
+          steps.push({
+            type: 'step',
+            divIdx: idx,
+            title: `Krok ${idx + 1}: Dzielimy ${formatInt(d.dividend)} przez ${formatInt(d.factor)}`,
+            stageLabel: `Krok ${idx + 1}`
+          });
+        });
+
+        steps.push({
+          type: 'done',
+          divIdx: divisions.length,
+          title: 'Gotowe! Rozkład zakończony',
+          stageLabel: 'Podsumowanie'
+        });
+
+        return {
+          n,
+          divisions,
+          factors,
+          grouped,
+          primeColorMap,
+          isNumberPrime,
+          totalDivisorsCount,
+          allDivisors,
+          steps
+        };
+      }
+
+      // =========================================================
+      // RENDEROWANIE ZAKŁADKI 1: METODA PIONOWEJ KRESKI
+      // =========================================================
+
+      function renderBarView(model, stepIdx) {
+        const step = model.steps[stepIdx];
+        const { n, divisions } = model;
+
+        // Ile dzieleń zostało już wykonanych?
+        const completedCount = step.type === 'start'
+          ? 0
+          : (step.type === 'step' ? step.divIdx + 1 : divisions.length);
+
+        const table = document.createElement('div');
+        table.className = 'bar-table';
+
+        // Wiersze 0 .. completedCount:
+        // W wierszu i:
+        // - Lewa kolumna: jeśli i === 0 -> n; jeśli i > 0 -> divisions[i - 1].quotient (ostatni to 1)
+        // - Prawa kolumna: jeśli i < completedCount -> divisions[i].factor
+        // - Podpowiedź: dla aktywnego wiersza (step.type === 'step' && i === step.divIdx) -> "dividend : factor = quotient"
+        //   oraz dla wiersza z "1" gdy completedCount === divisions.length -> "Koniec rozkładu!"
+        for (let i = 0; i <= completedCount; i++) {
+          const leftVal = i === 0 ? n : divisions[i - 1].quotient;
+          const isFinalOne = i === divisions.length && leftVal === 1;
+          const isActiveStepRow = step.type === 'step' && i === step.divIdx;
+          const isJustWrittenQuotient = step.type === 'step' && i === step.divIdx + 1;
+
+          // Lewa kolumna
+          const leftCell = document.createElement('div');
+          leftCell.className = 'bar-left';
+          if (isActiveStepRow) leftCell.classList.add('is-active-dividend');
+          if (isJustWrittenQuotient && !isFinalOne) leftCell.classList.add('is-new-quotient');
+
+          if (isFinalOne) {
+            leftCell.classList.add('is-end-one');
+            const oneSpan = document.createElement('span');
+            oneSpan.textContent = '1';
+            leftCell.appendChild(oneSpan);
+          } else {
+            leftCell.textContent = formatInt(leftVal);
+          }
+
+          // Pionowa kreska
+          const divLine = document.createElement('div');
+          divLine.className = 'bar-divider';
+
+          // Prawa kolumna (czynnik pierwszy)
+          const rightCell = document.createElement('div');
+          rightCell.className = 'bar-right';
+          if (i < completedCount) {
+            const p = divisions[i].factor;
+            const badge = document.createElement('span');
+            badge.className = 'prime-badge';
+            if (isActiveStepRow) {
+              badge.classList.add('is-active-factor');
+            }
+            badge.textContent = formatInt(p);
+            rightCell.appendChild(badge);
+          }
+
+          // Kolumna podpowiedzi dzielenia
+          const hintCell = document.createElement('div');
+          hintCell.className = 'bar-hint';
+          if (isActiveStepRow) {
+            const d = divisions[i];
+            const pill = document.createElement('span');
+            pill.className = 'div-pill';
+            pill.textContent = `${formatInt(d.dividend)} : ${formatInt(d.factor)} = ${formatInt(d.quotient)}`;
+            hintCell.appendChild(pill);
+          } else if (isFinalOne && (step.type === 'done' || isJustWrittenQuotient)) {
+            const pill = document.createElement('span');
+            pill.className = 'end-pill';
+            pill.textContent = '✓ Koniec rozkładu';
+            hintCell.appendChild(pill);
+          }
+
+          table.appendChild(leftCell);
+          table.appendChild(divLine);
+          table.appendChild(rightCell);
+          table.appendChild(hintCell);
+        }
+
+        elBarView.innerHTML = '';
+        elBarView.appendChild(table);
+      }
+
+      // =========================================================
+      // RENDEROWANIE ZAKŁADKI 2: DRZEWKO ROZKŁADU (SVG)
+      // =========================================================
+
+      function renderTreeView(model, stepIdx) {
+        const step = model.steps[stepIdx];
+        const { n, divisions } = model;
+        const completedCount = step.type === 'start'
+          ? 0
+          : (step.type === 'step' ? step.divIdx + 1 : divisions.length);
+
+        const svgNS = 'http://www.w3.org/2000/svg';
+
+        // Obliczamy szerokość tekstu, by węzły zawsze mieściły nawet 7-cyfrowe liczby
+        function boxWidthFor(val) {
+          const len = formatInt(val).length;
+          return Math.max(64, len * 12 + 26);
+        }
+
+        function circleRadiusFor(val) {
+          const len = formatInt(val).length;
+          return Math.max(22, len * 5.2 + 12);
+        }
+
+        // Ile poziomów rozgałęzień rysujemy?
+        // Ostatnie dzielenie w `divisions` to zawsze `p : p = 1` (gdzie p jest liczbą pierwszą).
+        // W drzewku NIE rysujemy gałęzi do 1 — zamiast tego, gdy dojdziemy do ostatniego kroku,
+        // ostatni węzeł zamienia się z niebieskiego kafelka w zielone kółko (liczba pierwsza)!
+        const maxSplits = Math.max(0, divisions.length - 1);
+        const visibleSplits = Math.min(completedCount, maxSplits);
+        const finalPrimeRevealed = completedCount === divisions.length;
+
+        const dx = 76; // Przesunięcie poziome między poziomami
+        const dy = 74; // Odstęp pionowy między poziomami
+        const padX = 72;
+        const padY = 46;
+
+        // Wyznaczamy pozycje węzłów łańcucha (poziom 0 .. visibleSplits)
+        // Węzeł złożony poziomu L ma współrzędne: x = padX + (L + 1) * dx, y = padY + L * dy
+        // Jego lewe dziecko (czynnik pierwszy) ma: x = parentX - dx, y = parentY + dy
+        // Jego prawe dziecko (kolejny iloraz) ma: x = parentX + dx, y = parentY + dy
+        const nodes = [];
+        const edges = [];
+
+        // Korzeń (poziom 0)
+        const rootX = padX + dx;
+        const rootY = padY;
+        const rootIsPrimeAndRevealed = divisions.length === 1 && finalPrimeRevealed;
+
+        nodes.push({
+          id: 'chain-0',
+          val: n,
+          x: rootX,
+          y: rootY,
+          isPrime: rootIsPrimeAndRevealed,
+          isActive: (step.type === 'start') || (step.type === 'step' && step.divIdx === 0 && divisions.length === 1),
+          isNew: step.type === 'start'
+        });
+
+        for (let i = 0; i < visibleSplits; i++) {
+          const parentX = rootX + i * dx;
+          const parentY = rootY + i * dy;
+          const d = divisions[i];
+
+          const leftX = parentX - dx;
+          const leftY = parentY + dy;
+          const rightX = parentX + dx;
+          const rightY = parentY + dy;
+
+          const isThisStep = step.type === 'step' && step.divIdx === i;
+          const isLastChainNode = i === maxSplits - 1;
+          const rightIsPrimeRevealed = isLastChainNode && finalPrimeRevealed;
+          const rightIsActivePrimeStep = isLastChainNode && step.type === 'step' && step.divIdx === divisions.length - 1;
+
+          edges.push({ x1: parentX, y1: parentY, x2: leftX, y2: leftY, active: isThisStep });
+          edges.push({ x1: parentX, y1: parentY, x2: rightX, y2: rightY, active: isThisStep });
+
+          // Lewy liść: czynnik pierwszy (zawsze zielone kółko)
+          nodes.push({
+            id: `leaf-${i}`,
+            val: d.factor,
+            x: leftX,
+            y: leftY,
+            isPrime: true,
+            isActive: isThisStep,
+            isNew: isThisStep
+          });
+
+          // Prawy węzeł: iloraz (niebieski kafelek, a na ostatnim kroku zamienia się w zielone kółko!)
+          nodes.push({
+            id: `chain-${i + 1}`,
+            val: d.quotient,
+            x: rightX,
+            y: rightY,
+            isPrime: rightIsPrimeRevealed,
+            isActive: isThisStep || rightIsActivePrimeStep,
+            isNew: isThisStep || rightIsActivePrimeStep
+          });
+        }
+
+        // Wyznaczenie granic SVG (bounding box)
+        let minX = Infinity, maxX = -Infinity, maxY = -Infinity;
+        nodes.forEach((nd) => {
+          const halfW = nd.isPrime ? circleRadiusFor(nd.val) + 12 : boxWidthFor(nd.val) / 2 + 12;
+          if (nd.x - halfW < minX) minX = nd.x - halfW;
+          if (nd.x + halfW > maxX) maxX = nd.x + halfW;
+          if (nd.y + 42 > maxY) maxY = nd.y + 42;
+        });
+
+        const vbX = Math.floor(minX - 10);
+        const vbY = 0;
+        const vbW = Math.max(320, Math.ceil(maxX - minX + 20));
+        const vbH = Math.max(150, Math.ceil(maxY + 14));
+
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('class', 'tree-svg');
+        svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+        svg.setAttribute('width', String(vbW));
+        svg.setAttribute('height', String(vbH));
+        svg.setAttribute('role', 'img');
+        svg.setAttribute('aria-label', `Drzewko rozkładu liczby ${n} na czynniki pierwsze`);
+
+        // 1. Rysujemy gałęzie (pod węzłami)
+        edges.forEach((e) => {
+          const line = document.createElementNS(svgNS, 'line');
+          line.setAttribute('x1', String(e.x1));
+          line.setAttribute('y1', String(e.y1));
+          line.setAttribute('x2', String(e.x2));
+          line.setAttribute('y2', String(e.y2));
+          line.setAttribute('class', e.active ? 'tree-branch is-active' : 'tree-branch');
+          svg.appendChild(line);
+        });
+
+        // 2. Rysujemy węzły
+        nodes.forEach((nd) => {
+          const g = document.createElementNS(svgNS, 'g');
+          if (nd.isNew) g.setAttribute('class', 'tree-node-anim');
+
+          if (nd.isPrime) {
+            const r = circleRadiusFor(nd.val);
+            const circle = document.createElementNS(svgNS, 'circle');
+            circle.setAttribute('cx', String(nd.x));
+            circle.setAttribute('cy', String(nd.y));
+            circle.setAttribute('r', String(r));
+            circle.setAttribute('fill', nd.isActive ? '#059669' : '#d1fae5');
+            circle.setAttribute('stroke', nd.isActive ? '#064e3b' : '#10b981');
+            circle.setAttribute('stroke-width', nd.isActive ? '3.5' : '2.5');
+            g.appendChild(circle);
+
+            const txt = document.createElementNS(svgNS, 'text');
+            txt.setAttribute('x', String(nd.x));
+            txt.setAttribute('y', String(nd.y));
+            txt.setAttribute('class', 'tree-text');
+            txt.setAttribute('font-size', formatInt(nd.val).length > 5 ? '13' : '16');
+            txt.setAttribute('fill', nd.isActive ? '#ffffff' : '#065f46');
+            txt.textContent = formatInt(nd.val);
+            g.appendChild(txt);
+          } else {
+            const w = boxWidthFor(nd.val);
+            const h = 40;
+            const rect = document.createElementNS(svgNS, 'rect');
+            rect.setAttribute('x', String(nd.x - w / 2));
+            rect.setAttribute('y', String(nd.y - h / 2));
+            rect.setAttribute('width', String(w));
+            rect.setAttribute('height', String(h));
+            rect.setAttribute('rx', '10');
+            rect.setAttribute('ry', '10');
+            rect.setAttribute('fill', nd.isActive ? '#fef3c7' : '#eff6ff');
+            rect.setAttribute('stroke', nd.isActive ? '#f59e0b' : '#3b82f6');
+            rect.setAttribute('stroke-width', nd.isActive ? '3' : '2');
+            g.appendChild(rect);
+
+            const txt = document.createElementNS(svgNS, 'text');
+            txt.setAttribute('x', String(nd.x));
+            txt.setAttribute('y', String(nd.y));
+            txt.setAttribute('class', 'tree-text');
+            txt.setAttribute('font-size', formatInt(nd.val).length > 6 ? '14' : '16');
+            txt.setAttribute('fill', nd.isActive ? '#92400e' : '#1e3a8a');
+            txt.textContent = formatInt(nd.val);
+            g.appendChild(txt);
+          }
+
+          svg.appendChild(g);
+        });
+
+        // Podpis dla samej liczby pierwszej (gdy nie ma gałęzi)
+        if (divisions.length === 1 && finalPrimeRevealed) {
+          const note = document.createElementNS(svgNS, 'text');
+          note.setAttribute('x', String(rootX));
+          note.setAttribute('y', String(rootY + circleRadiusFor(n) + 22));
+          note.setAttribute('text-anchor', 'middle');
+          note.setAttribute('font-family', 'system-ui, sans-serif');
+          note.setAttribute('font-size', '13');
+          note.setAttribute('font-weight', '700');
+          note.setAttribute('fill', '#047857');
+          note.textContent = '✓ Liczba pierwsza — nie rozkłada się dalej';
+          svg.appendChild(note);
+        }
+
+        elTreeView.innerHTML = '';
+        elTreeView.appendChild(svg);
+      }
+
+      // =========================================================
+      // RENDEROWANIE OBJAŚNIENIA I KARTY PODSUMOWANIA
+      // =========================================================
+
+      function renderExplanation(model, stepIdx) {
+        const step = model.steps[stepIdx];
+        const { n, divisions, factors, grouped, primeColorMap } = model;
+
+        elExplanationCard.className = `explanation-card theme-${step.type}`;
+        elExplanationTitle.textContent = step.title;
+
+        if (step.type === 'start') {
+          elExplanationBody.innerHTML = `Rozkładamy liczbę <span class="chip chip-blue">${formatInt(n)}</span> na czynniki pierwsze. Szukamy najmniejszej liczby pierwszej, przez którą dzieli się <span class="chip chip-blue">${formatInt(n)}</span>. Kliknij <strong>„Następny”</strong> lub <strong>„Odtwórz”</strong>, aby rozpocząć!`;
+          return;
+        }
+
+        if (step.type === 'step') {
+          const d = divisions[step.divIdx];
+          const isInitial = step.divIdx === 0;
+          let html = '';
+
+          if (state.showDivisibility) {
+            html += buildDivisibilityReason(d.dividend, d.factor, d.quotient, isInitial) + ' ';
+          } else if (d.factor === d.dividend) {
+            html += `Liczba <span class="chip chip-green">${formatInt(d.dividend)}</span> jest liczbą pierwszą — dzieli się tylko przez 1 i samą siebie. `;
+          }
+
+          html += `Wykonujemy dzielenie: <span class="chip chip-amber">${formatInt(d.dividend)} : ${formatInt(d.factor)} = ${formatInt(d.quotient)}</span>.`;
+          if (d.quotient === 1) {
+            html += ' Otrzymaliśmy <span class="chip chip-green">1</span> — to znak, że rozkład jest zakończony!';
+          }
+
+          elExplanationBody.innerHTML = html;
+          return;
+        }
+
+        // Krok końcowy ('done')
+        const productHtml = buildColoredProductHtml(factors, primeColorMap);
+        const powerHtml = buildColoredPowerHtml(grouped, primeColorMap);
+
+        let doneHtml = `Wszystkie czynniki pierwsze zostały znalezione! Zapisujemy rozkład jako iloczyn:<br>`;
+        doneHtml += `<div style="margin-top: 6px; font-size: 1.06rem;"><strong>${formatInt(n)} =</strong> ${productHtml}</div>`;
+
+        if (state.showPowers && grouped.some(g => g.exp > 1)) {
+          doneHtml += `<div style="margin-top: 6px; font-size: 1.06rem;">W postaci potęgowej: <strong>${formatInt(n)} =</strong> ${powerHtml}</div>`;
+        }
+
+        elExplanationBody.innerHTML = doneHtml;
+      }
+
+      function renderSummaryCard(model) {
+        const { n, factors, grouped, primeColorMap, isNumberPrime, totalDivisorsCount, allDivisors } = model;
+
+        elSumNumberTitle.textContent = formatInt(n);
+        elSumProduct.innerHTML = `${formatInt(n)} = ${buildColoredProductHtml(factors, primeColorMap)}`;
+
+        elSumPowerTile.style.display = state.showPowers ? '' : 'none';
+        elSumPower.innerHTML = `${formatInt(n)} = ${buildColoredPowerHtml(grouped, primeColorMap)}`;
+
+        if (isNumberPrime) {
+          elSumType.innerHTML = `<span class="status-pill status-prime">★ Liczba pierwsza</span>`;
+        } else {
+          elSumType.innerHTML = `<span class="status-pill status-composite">◆ Liczba złożona</span>`;
+        }
+
+        const formulaParts = grouped.map(g => `(${g.exp} + 1)`).join(' · ');
+        elSumDivCount.innerHTML = `${formatInt(totalDivisorsCount)} <span style="font-size: 0.78rem; font-weight: 600; color: #64748b; display: block; font-family: var(--font-sans);">wzór: ${formulaParts}</span>`;
+
+        // Lista wszystkich dzielników
+        elDivisorsSummary.textContent = `Pokaż wszystkie dzielniki naturalne liczby ${formatInt(n)} (${formatInt(totalDivisorsCount)})`;
+        if (allDivisors) {
+          const pillsHtml = allDivisors
+            .map(d => {
+              const cls = isPrime(d) ? 'divisor-pill is-prime-div' : 'divisor-pill';
+              const title = isPrime(d) ? 'Dzielnik będący liczbą pierwszą' : 'Dzielnik naturalny';
+              return `<span class="${cls}" title="${title}">${formatInt(d)}</span>`;
+            })
+            .join('');
+          elDivisorsBody.innerHTML = `<div class="divisors-list">${pillsHtml}</div><p class="cheat-note">Kolorem zielonym wyróżniono dzielniki będące liczbami pierwszymi.</p>`;
+        } else {
+          elDivisorsBody.innerHTML = `<p style="font-size: 0.9rem; color: var(--text-muted);">Liczba <strong>${formatInt(n)}</strong> ma aż <strong>${formatInt(totalDivisorsCount)}</strong> dzielników naturalnych (powyżej 200), dlatego pełna lista została ukryta dla zachowania czytelności strony.</p>`;
+        }
+      }
+
+      function renderAll() {
+        const model = state.model;
+        if (!model) return;
+
+        const step = model.steps[state.currentStep];
+        const totalSteps = model.steps.length - 1;
+
+        // Odznaki i pasek postępu
+        elStageBadge.textContent = step.stageLabel;
+        elStageBadge.className = `stage-badge stage-${step.type}`;
+        elStepCounter.textContent = `Krok ${state.currentStep} z ${totalSteps}`;
+        const pct = totalSteps > 0 ? Math.round((state.currentStep / totalSteps) * 100) : 100;
+        elProgressFill.style.width = `${pct}%`;
+
+        // Widok aktywnej zakładki
+        elBarView.style.display = state.viewMode === 'bar' ? 'flex' : 'none';
+        elTreeView.style.display = state.viewMode === 'tree' ? 'flex' : 'none';
+
+        if (state.viewMode === 'bar') {
+          renderBarView(model, state.currentStep);
+        } else {
+          renderTreeView(model, state.currentStep);
+        }
+
+        renderExplanation(model, state.currentStep);
+        renderSummaryCard(model);
+
+        // Stan przycisków nawigacji
+        elBtnStart.disabled = state.currentStep === 0;
+        elBtnPrev.disabled = state.currentStep === 0;
+        elBtnNext.disabled = state.currentStep >= totalSteps;
+        elBtnEnd.disabled = state.currentStep >= totalSteps;
+        updatePlayButtonUI();
+      }
+
+      // =========================================================
+      // WALIDACJA I OBSŁUGA KOMUNIKATÓW
+      // =========================================================
+
+      function showMessage(html, type = null) {
+        elInput.classList.remove('is-invalid', 'is-info');
+        elMessageBox.className = 'message-box';
+
+        if (!html) {
+          elMessageBox.innerHTML = '';
+          return;
+        }
+
+        elMessageBox.innerHTML = html;
+        elMessageBox.classList.add('visible');
+        if (type === 'error') {
+          elMessageBox.classList.add('is-error');
+          elInput.classList.add('is-invalid');
+        } else if (type === 'edu') {
+          elMessageBox.classList.add('is-edu');
+          elInput.classList.add('is-info');
+        }
+      }
+
+      function handleFactorize() {
+        stopAutoPlay();
+        const raw = elInput.value.trim().replace(/\s+/g, '');
+
+        if (raw === '') {
+          showMessage('Wpisz liczbę naturalną od <strong>2</strong> do <strong>10 000 000</strong>.', 'error');
+          return;
+        }
+
+        if (/^-/.test(raw)) {
+          showMessage('Wpisana liczba jest ujemna. Rozkład na czynniki pierwsze wykonujemy dla <strong>liczb naturalnych większych od 1</strong>.', 'error');
+          return;
+        }
+
+        if (!/^\d+$/.test(raw)) {
+          showMessage('Wpisz wyłącznie cyfry (liczbę całkowitą bez przecinka i liter).', 'error');
+          return;
+        }
+
+        const val = Number(raw);
+
+        if (val === 0 || val === 1) {
+          showMessage(
+            `💡 <strong>Ciekawostka matematyczna:</strong> Liczby <strong>0</strong> i <strong>1</strong> nie są ani liczbami pierwszymi, ani złożonymi, dlatego <strong>nie rozkłada się ich na czynniki pierwsze</strong>. Wpisz liczbę co najmniej równą <strong>2</strong>!`,
+            'edu'
+          );
+          return;
+        }
+
+        if (!Number.isSafeInteger(val) || val > 10000000) {
+          showMessage('Liczba jest zbyt duża! Wpisz liczbę naturalną nie większą niż <strong>10 000 000</strong>.', 'error');
+          return;
+        }
+
+        showMessage('');
+        state.model = buildFactorizationModel(val);
+        state.currentStep = 0;
+        renderAll();
+      }
+
+      // =========================================================
+      // STEROWANIE ODTWARZANIEM I ZAKŁADKAMI
+      // =========================================================
+
+      function stopAutoPlay() {
+        if (state.playTimer !== null) {
+          clearInterval(state.playTimer);
+          state.playTimer = null;
+        }
+        state.isPlaying = false;
+        updatePlayButtonUI();
+      }
+
+      function updatePlayButtonUI() {
+        if (state.isPlaying) {
+          elBtnPlay.textContent = '⏸ Pauza';
+          elBtnPlay.classList.add('is-playing');
+        } else {
+          elBtnPlay.textContent = '▶ Odtwórz';
+          elBtnPlay.classList.remove('is-playing');
+        }
+      }
+
+      function advanceOneStep() {
+        if (!state.model) return;
+        const lastIdx = state.model.steps.length - 1;
+        if (state.currentStep < lastIdx) {
+          state.currentStep++;
+          renderAll();
+          if (state.currentStep >= lastIdx) {
+            stopAutoPlay();
+          }
+        } else {
+          stopAutoPlay();
+        }
+      }
+
+      function toggleAutoPlay() {
+        if (!state.model) return;
+        if (state.isPlaying) {
+          stopAutoPlay();
+          return;
+        }
+        if (state.currentStep >= state.model.steps.length - 1) {
+          state.currentStep = 0;
+          renderAll();
+        }
+        state.isPlaying = true;
+        updatePlayButtonUI();
+        advanceOneStep();
+        if (state.isPlaying) {
+          state.playTimer = setInterval(advanceOneStep, SPEED_MAP[state.speedLevel].ms);
+        }
+      }
+
+      function setViewMode(mode) {
+        state.viewMode = mode;
+        const isBar = mode === 'bar';
+        elTabBar.classList.toggle('is-active', isBar);
+        elTabBar.setAttribute('aria-selected', String(isBar));
+        elTabTree.classList.toggle('is-active', !isBar);
+        elTabTree.setAttribute('aria-selected', String(!isBar));
+        renderAll();
+      }
+
+      // =========================================================
+      // INICJALIZACJA ŚCIĄGAWKI LICZB PIERWSZYCH DO 100
+      // =========================================================
+
+      function populatePrimesCheatsheet() {
+        elPrimes100Grid.innerHTML = '';
+        PRIMES_UNDER_100.forEach((p) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'prime-100-cell';
+          btn.textContent = String(p);
+          btn.title = `Kliknij, aby wstawić liczbę pierwszą ${p}`;
+          btn.addEventListener('click', () => {
+            elInput.value = String(p);
+            handleFactorize();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+          elPrimes100Grid.appendChild(btn);
+        });
+      }
+
+      // =========================================================
+      // ZDARZENIA (EVENT LISTENERS)
+      // =========================================================
+
+      elBtnFactorize.addEventListener('click', handleFactorize);
+
+      elInput.addEventListener('input', () => {
+        elInput.classList.remove('is-invalid', 'is-info');
+      });
+
+      elInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleFactorize();
+        }
+      });
+
+      elBtnRandom.addEventListener('click', () => {
+        const currentVal = state.model ? state.model.n : 0;
+        let pick = RANDOM_POOL[Math.floor(Math.random() * RANDOM_POOL.length)];
+        if (pick === currentVal) {
+          pick = RANDOM_POOL[(RANDOM_POOL.indexOf(pick) + 1) % RANDOM_POOL.length];
+        }
+        elInput.value = String(pick);
+        handleFactorize();
+      });
+
+      document.querySelectorAll('.btn-preset').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          elInput.value = btn.getAttribute('data-val');
+          handleFactorize();
+        });
+      });
+
+      elOptDivisibility.addEventListener('change', () => {
+        state.showDivisibility = elOptDivisibility.checked;
+        renderAll();
+      });
+
+      elOptPowers.addEventListener('change', () => {
+        state.showPowers = elOptPowers.checked;
+        renderAll();
+      });
+
+      elTabBar.addEventListener('click', () => setViewMode('bar'));
+      elTabTree.addEventListener('click', () => setViewMode('tree'));
+
+      elBtnStart.addEventListener('click', () => {
+        stopAutoPlay();
+        state.currentStep = 0;
+        renderAll();
+      });
+
+      elBtnPrev.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.currentStep > 0) {
+          state.currentStep--;
+          renderAll();
+        }
+      });
+
+      elBtnPlay.addEventListener('click', toggleAutoPlay);
+
+      elBtnNext.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.model && state.currentStep < state.model.steps.length - 1) {
+          state.currentStep++;
+          renderAll();
+        }
+      });
+
+      elBtnEnd.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.model) {
+          state.currentStep = state.model.steps.length - 1;
+          renderAll();
+        }
+      });
+
+      elSpeedSlider.addEventListener('input', () => {
+        state.speedLevel = Number(elSpeedSlider.value);
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        if (state.isPlaying) {
+          stopAutoPlay();
+          toggleAutoPlay();
+        }
+      });
+
+      // Skróty klawiszowe (←, →, Spacja)
+      document.addEventListener('keydown', (e) => {
+        const tag = document.activeElement ? document.activeElement.tagName : '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+          return;
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          elBtnNext.click();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          elBtnPrev.click();
+        } else if (e.code === 'Space') {
+          e.preventDefault();
+          toggleAutoPlay();
+        }
+      });
+
+      // Inicjalizacja po załadowaniu strony
+      window.addEventListener('load', () => {
+        populatePrimesCheatsheet();
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        handleFactorize();
+      });
+    })();
+  </script>
+</body>
+</html>

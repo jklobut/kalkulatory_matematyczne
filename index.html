@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interaktywny Zeszyt Matematyczny — Klasy 4–6 SP</title>
+  <style>
+    /* =========================================================
+       ZMIENNE KOLORYSTYCZNE I TYPOGRAFIA (100% OFFLINE)
+       ========================================================= */
+    :root {
+      --bg-page: #f4f6fb;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-soft: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --primary-border: #bfdbfe;
+      --paper-grid: rgba(148, 163, 184, 0.24);
+      --paper-margin: rgba(248, 113, 113, 0.35);
+      --radius-xl: 22px;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 10px 28px rgba(15, 23, 42, 0.08);
+      --shadow-hover: 0 16px 34px rgba(37, 99, 235, 0.14);
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      /* Subtelne tło w kratkę przypominające zeszyt matematyczny */
+      background-image:
+        linear-gradient(to right, var(--paper-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--paper-grid) 1px, transparent 1px);
+      background-size: 28px 28px;
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 28px 16px 52px;
+      overflow-x: hidden;
+    }
+
+    /* =========================================================
+       KONTENER GŁÓWNY I NAGŁÓWEK (HERO)
+       ========================================================= */
+    .app-wrapper {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      position: relative;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1.5px solid var(--border-soft);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+      padding: 32px 24px 28px;
+      margin-bottom: 34px;
+      overflow: hidden;
+    }
+
+    /* Delikatny czerwony margines zeszytowy z lewej strony banera */
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 24px;
+      width: 2px;
+      background: var(--paper-margin);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid var(--primary-border);
+      border-radius: 999px;
+      padding: 5px 15px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 {
+      font-size: clamp(1.6rem, 3.8vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--text-main);
+      margin-bottom: 10px;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      color: var(--text-muted);
+      font-size: clamp(0.94rem, 1.8vw, 1.04rem);
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .hero-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .hero-meta-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #16a34a;
+      display: inline-block;
+    }
+
+    /* =========================================================
+       SEKCJE TEMATYCZNE
+       ========================================================= */
+    .section-block {
+      margin-bottom: 36px;
+    }
+
+    .section-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-left: 4px;
+    }
+
+    .section-header h2 {
+      font-size: clamp(1.08rem, 2.2vw, 1.24rem);
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.015em;
+    }
+
+    .section-count {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: #ffffff;
+      border: 1px solid var(--border-soft);
+      border-radius: 999px;
+      padding: 3px 11px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* =========================================================
+       SIATKA I KARTY KALKULATORÓW
+       ========================================================= */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+      gap: 18px;
+    }
+
+    .calc-card {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: inherit;
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-soft);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      position: relative;
+      min-height: 230px;
+    }
+
+    .calc-card:hover,
+    .calc-card:focus-visible {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+      border-color: #93c5fd;
+      outline: none;
+    }
+
+    .calc-card:active {
+      transform: translateY(-1px);
+    }
+
+    .calc-card-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .calc-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-weight: 900;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.14);
+    }
+
+    /* Indywidualne gradienty ikon spójne z poszczególnymi kalkulatorami */
+    .icon-add {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      font-size: 1.75rem;
+    }
+    .icon-sub {
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      font-size: 1.75rem;
+    }
+    .icon-mul {
+      background: linear-gradient(135deg, #2563eb, #ea580c);
+      font-size: 1.7rem;
+    }
+    .icon-div {
+      background: linear-gradient(135deg, #059669, #2563eb);
+      font-size: 1.75rem;
+    }
+    .icon-prime {
+      background: linear-gradient(135deg, #2563eb, #059669);
+    }
+    .icon-nww {
+      background: linear-gradient(135deg, #2563eb, #16a34a);
+      font-size: 0.94rem;
+      letter-spacing: -0.04em;
+    }
+    .icon-nwd {
+      background: linear-gradient(135deg, #16a34a, #2563eb);
+      font-size: 0.94rem;
+      letter-spacing: -0.04em;
+    }
+    .icon-frac-add {
+      background: linear-gradient(135deg, #7c3aed, #2563eb);
+    }
+    .icon-frac-sub {
+      background: linear-gradient(135deg, #4f46e5, #9333ea);
+    }
+    .icon-frac-mul {
+      background: linear-gradient(135deg, #ea580c, #7c3aed);
+    }
+    .icon-frac-div {
+      background: linear-gradient(135deg, #0d9488, #7c3aed);
+    }
+
+    /* Graficzna ikona ułamka ze znakiem działania */
+    .frac-icon-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      line-height: 1;
+    }
+
+    .frac-mini {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.78rem;
+      font-weight: 900;
+    }
+
+    .frac-mini-bar {
+      width: 14px;
+      height: 2px;
+      background: #ffffff;
+      border-radius: 2px;
+      margin: 2px 0;
+    }
+
+    .frac-icon-op {
+      font-size: 1.12rem;
+      font-weight: 900;
+    }
+
+    .calc-title {
+      font-size: 1.06rem;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.25;
+    }
+
+    .calc-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.52;
+      margin-bottom: 16px;
+      flex: 1;
+    }
+
+    .calc-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .tag {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #334155;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 2px 9px;
+    }
+
+    .calc-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 0.89rem;
+      font-weight: 700;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .calc-card:hover .calc-cta,
+    .calc-card:focus-visible .calc-cta {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    /* =========================================================
+       STOPKA
+       ========================================================= */
+    .app-footer {
+      text-align: center;
+      margin-top: 8px;
+      padding: 16px 12px 0;
+      border-top: 1px solid rgba(203, 213, 225, 0.7);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* =========================================================
+       RESPONSYWNOŚĆ (TABLETY I TELEFONY)
+       ========================================================= */
+    @media (max-width: 640px) {
+      body {
+        padding: 16px 12px 36px;
+      }
+
+      .hero {
+        padding: 24px 16px 22px;
+        margin-bottom: 24px;
+        border-radius: var(--radius-lg);
+      }
+
+      .hero::before {
+        left: 12px;
+      }
+
+      .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .calc-card {
+        padding: 18px;
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- NAGŁÓWEK GŁÓWNY -->
+    <header class="hero">
+      <div class="hero-badge">Matematyka • Klasy 4–6 SP</div>
+      <h1>Interaktywny Zeszyt Matematyczny</h1>
+      <p>Wybierz kalkulator i prześledź krok po kroku obliczenia na kartce w kratkę. Wszystkie narzędzia działają samodzielnie, bez reklam i w 100% offline.</p>
+      <div class="hero-meta">
+        <span class="hero-meta-dot" aria-hidden="true"></span>
+        <span>11 interaktywnych kalkulatorów • 3 działy tematyczne</span>
+      </div>
+    </header>
+
+    <main>
+      <!-- SEKCJA 1: DZIAŁANIA PISEMNE -->
+      <section class="section-block" aria-labelledby="sec-pisemne">
+        <div class="section-header">
+          <h2 id="sec-pisemne">Działania pisemne</h2>
+          <span class="section-count">4 kalkulatory</span>
+        </div>
+
+        <div class="cards-grid">
+          <!-- 1. Dodawanie pisemne -->
+          <a class="calc-card" data-calc="dodawanie" href="kalkulator_dodawania_pisemnego.html" target="_top">
+            <div class="calc-card-top">
+              <div class="calc-icon icon-add" aria-hidden="true">+</div>
+              <h3 class="calc-title">Dodawanie pisemne</h3>
+            </div>
+            <p class="calc-desc">Dodawanie wielu liczb jedna pod drugą z animacją przeniesień «w pamięci» oraz wyrównywaniem przecinków.</p>
+            <div class="calc-tags">
+              <span class="tag">Wiele składników</span>
+              <span class="tag">Ułamki dziesiętne</span>
+            </div>
+            <span class="calc-cta"><span>Otwórz kalkulator</span><span aria-hidden="true">→</span></span>
+          </a>
+
+          <!-- 2. Odejmowanie pisemne -->
+          <a class="calc-card" data-calc="odejmowanie" href="kalkulator_odejmowania_pisemnego.html" target="_top">
+            <div class="calc-card-top">
+              <div class="calc-icon icon-sub" aria-hidden="true">−</div>
+              <h3 class="calc-title">Odejmowanie pisemne</h3>
+            </div>
+            <p class="calc-desc">Wizualizacja pożyczek (również przez zera), przekreślanie cyfr w odjemnej i obsługa wyników ujemnych.</p>
+            <div class="calc-tags">
+              <span class="tag">Pożyczanie</span>
+              <span class="tag">Wyniki ujemne</span>
+            </div>
+            <span class="calc-cta"><span>Otwórz kalkulator</span><span aria-hidden="true">→</span></span>
+          </a>
+
+          <!-- 3. Mnożenie pisemne -->
+          <a class="calc-card" data-calc="mnozenie" href="kalkulator_mnozenia_pisemnego.html" target="_top">
+            <div class="calc-card-top">
+              <div class="calc-icon icon-mul" aria-hidden="true">×</div>
+              <h3 class="calc-title">Mnożenie pisemne</h3>
+            </div>
+            <p class="calc-desc">Mnożenie krok po kroku, dodawanie iloczynów cząstkowych oraz stawianie przecinka w wyniku.</p>
+            <div class="calc-tags">
+              <span class="tag">Iloczyny cząstkowe</span>
+              <span class="tag">Przecinek</span>
+            </div>
+            <span class="calc-cta"><span>Otwórz kalkulator</span><span aria-hidden="true">→</span></span>
+          </a>
+
+          <!-- 4. Dzielenie pisemne -->
+          <a class="calc-card" data-calc="dzielenie" href="kalkulator_dzielenia_pisemnego.html" target="_top">
+            <div class="calc-card-top">
+              <div class="calc-icon icon-div" aria-hidden="true">:</div>
+              <h3 class="calc-title">Dzielenie pisemne</h3>
+            </div>
+            <p class="calc-desc">Polski zapis z ilorazem nad kreską, przesuwanie przecinka, wynik z resztą oraz wykrywanie okresów.</p>
+            <div class="calc-tags">
+              <span class="tag">Z resztą</span>
+              <span class="tag">Ułamki okresowe</span>
+            </div>
+            <span class="calc-cta"><span>Otwórz kalkulator</span><span aria-hidden="true">→</span></span>
+          </a>
+        </div>
+      </section>
+
+      <!-- SEKCJA 2: PODZIELNOŚĆ, CZYNNIKI PIERWSZE, NWW I NWD -->
+      <section class="section-block" aria-labelledby="sec-podzielnosc">
+        <div class="section-header">
+          <h2 id="sec-podzielnosc">Podzielność, czynniki pierwsze, NWW i NWD</h2>
+          <span class="section-count">3 kalkulatory</span>
+        </div>
+
+        <div class="cards-grid">
+          <!-- 5. Rozkład na czynniki pierwsze -->
+          <a class="calc-card" data-calc="czynniki" href="kalkulator_czynniki_pierwsze.html" target="_top">
+            <div class="calc-card-top">
+              <div class="calc-icon icon-prime" aria-hidden="true">
+                <!-- Inline SVG: pionowa kreska z punktami czynników pierwszych -->
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="3" x2="12" y2="21"></line>
+                  <circle cx="17.5" cy="7.5" r="2.5"></circle>
+                  <circle cx="17.5" cy="15.5" r="2.5"></circle>
+                  <line x1="4" y1="7.5" x2="8.5" y2="7.5"></line>
+                  <line x1="4" y1="15.5" x2="8.5" y2="15.5"></line>
+                </svg>
+              </div>
+              <h3 class="calc-title">Rozkład na czynniki pierwsze</h3>
+            </div>
+            <p class="calc-desc">Metoda pionowej kreski oraz drzewko rozkładu SVG, cechy podzielności, zapis potęgowy i lista dzielników.</p>
+            <div class="calc-tags">
+              <span class="tag">Kreska i drzewko</span>
+              <span class="tag">Liczby pierwsze</span>
+            </div>
+            <span class="calc-cta"><span>Otwórz kalkulator</span><span aria-hidden="true">→</span></span>
+          </a>
+
+          <!-- 6. Wyznaczanie NWW -->
+          <a class="calc-card" data-calc="nww" href="kalkulator_wyznaczania_nww.html" target="_top">
+            <div class="calc-card-top">
+              <div class="calc-icon icon-nww" aria-hidden="true">NWW</div>
+              <h3 class="calc-title">Wyznaczanie NWW</h3>
+            </div>
+            <p class="calc-desc">Najmniejsza Wspólna Wielokrotność trzema metodami dla 2 lub 3 liczb wraz ze wspólnym mianownikiem ułamków.</p>
+            <div class="calc-tags">
+              <span class="tag">3 metody</span>
+              <span class="tag">Wspólny mianownik</span>
+            </div>
+            <span class="calc-cta"><span>Otwórz kalkulator</span><span aria-hidden="true">→</span></span>
+          </a>
+
+          <!-- 7. Wyznaczanie NWD -->
+          <a class="calc-card" data-calc="nwd" href="kalkulator_wyznaczania_nwd.html" target="_top">
+            <div class="calc-card-top">
+              <div class="calc-icon icon-nwd" aria-hidden="true">NWD</div>
+              <h3 class="calc-title">Wyznaczanie NWD</h3>
+            </div>
+            <p class="calc-desc">Największy Wspólny Dzielnik czterema metodami (w tym algorytm Euklidesa) oraz skracanie ułamków.</p>
+            <div class="calc-tags">
+              <span class="tag">4 metody</span>
+              <span class="tag">Skracanie ułamków</span>
+            </div>
+            <span class="calc-cta"><span>Otwórz kalkulator</span><span aria-hidden="true">→</span></span>
+          </a>
+        </div>
+      </section>
+
+      <!-- SEKCJA 3: UŁAMKI ZWYKŁE -->
+      <section class="section-block" aria-labelledby="sec-ulamki">
+        <div class="section-header">
+          <h2 id="sec-ulamki">Ułamki zwykłe</h2>
+          <span class="section-count">4 kalkulatory</span>
+        </div>
+
+        <div class="cards-grid">
+          <!-- 8. Dodawanie ułamków zwykłych -->
+          <a class="calc-card" data-calc="ulamki_dodawanie" href="kalkulator_dodawania_ulamkow.html" target="_top">
+            <div class="calc-card-top">
+              <div class="calc-icon icon-frac-add" aria-hidden="true">
+                <span class="frac-icon-wrap">
+                  <span class="frac-mini"><span>a</span><span class="frac-mini-bar"></span><span>b</span></span>
+                  <span class="frac-icon-op">+</span>
+                </span>
+              </div>
+              <h3 class="calc-title">Dodawanie ułamków zwykłych</h3>
+            </div>
+            <p class="calc-desc">Dodawanie 2 lub 3 ułamków i liczb mieszanych ze sprowadzaniem do wspólnego mianownika oraz kołami ułamkowymi SVG.</p>
+            <div class="calc-tags">
+              <span class="tag">Wspólny mianownik</span>
+              <span class="tag">Koła SVG</span>
+            </div>
+            <span class="calc-cta"><span>Otwórz kalkulator</span><span aria-hidden="true">→</span></span>
+          </a>
+
+          <!-- 9. Odejmowanie ułamków zwykłych -->
+          <a class="calc-card" data-calc="ulamki_odejmowanie" href="kalkulator_odejmowania_ulamkow.html" target="_top">
+            <div class="calc-card-top">
+              <div class="calc-icon icon-frac-sub" aria-hidden="true">
+                <span class="frac-icon-wrap">
+                  <span class="frac-mini"><span>a</span><span class="frac-mini-bar"></span><span>b</span></span>
+                  <span class="frac-icon-op">−</span>
+                </span>
+              </div>
+              <h3 class="calc-title">Odejmowanie ułamków zwykłych</h3>
+            </div>
+            <p class="calc-desc">Odejmowanie ułamków i liczb mieszanych z pożyczaniem całości, obsługą wyników ujemnych oraz wizualizacją na kołach SVG.</p>
+            <div class="calc-tags">
+              <span class="tag">Pożyczanie całości</span>
+              <span class="tag">Wyniki ujemne</span>
+            </div>
+            <span class="calc-cta"><span>Otwórz kalkulator</span><span aria-hidden="true">→</span></span>
+          </a>
+
+          <!-- 10. Mnożenie ułamków zwykłych -->
+          <a class="calc-card" data-calc="ulamki_mnozenie" href="kalkulator_mnozenia_ulamkow.html" target="_top">
+            <div class="calc-card-top">
+              <div class="calc-icon icon-frac-mul" aria-hidden="true">
+                <span class="frac-icon-wrap">
+                  <span class="frac-mini"><span>a</span><span class="frac-mini-bar"></span><span>b</span></span>
+                  <span class="frac-icon-op">×</span>
+                </span>
+              </div>
+              <h3 class="calc-title">Mnożenie ułamków zwykłych</h3>
+            </div>
+            <p class="calc-desc">Mnożenie 2 lub 3 ułamków i liczb mieszanych ze skracaniem na krzyż, modelem pola (kwadrat 1×1) oraz kołami SVG.</p>
+            <div class="calc-tags">
+              <span class="tag">Skracanie na krzyż</span>
+              <span class="tag">Model pola</span>
+            </div>
+            <span class="calc-cta"><span>Otwórz kalkulator</span><span aria-hidden="true">→</span></span>
+          </a>
+
+          <!-- 11. Dzielenie ułamków zwykłych -->
+          <a class="calc-card" data-calc="ulamki_dzielenie" href="kalkulator_dzielenia_ulamkow.html" target="_top">
+            <div class="calc-card-top">
+              <div class="calc-icon icon-frac-div" aria-hidden="true">
+                <span class="frac-icon-wrap">
+                  <span class="frac-mini"><span>a</span><span class="frac-mini-bar"></span><span>b</span></span>
+                  <span class="frac-icon-op">:</span>
+                </span>
+              </div>
+              <h3 class="calc-title">Dzielenie ułamków zwykłych</h3>
+            </div>
+            <p class="calc-desc">Dzielenie ułamków metodą «Zostaw – Zmień – Odwróć», skracanie na krzyż, pasek ułamkowy SVG i sprawdzenie mnożeniem.</p>
+            <div class="calc-tags">
+              <span class="tag">Odwrotność</span>
+              <span class="tag">Pasek SVG</span>
+            </div>
+            <span class="calc-cta"><span>Otwórz kalkulator</span><span aria-hidden="true">→</span></span>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <!-- STOPKA -->
+    <footer class="app-footer">
+      Wskazówka: w każdym kalkulatorze użyj przycisku <strong>← Menu</strong> w lewym górnym rogu, aby wrócić do tej strony.
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* =====================================================================
+         KONFIGURACJA ADRESÓW URL KALKULATORÓW (EDYTUJ DLA GOOGLE SITES)
+         ---------------------------------------------------------------------
+         Domyślnie linki wskazują na pliki .html w tym samym folderze (tryb
+         offline / GitHub Pages / Netlify).
+
+         Jeśli publikujesz w Google Sites i umieszczasz każdy kalkulator na
+         osobnej podstronie, podmień poniższe nazwy plików na pełne adresy URL
+         swoich podstron, np.:
+           dodawanie: 'https://sites.google.com/view/moj-zeszyt/dodawanie',
+         ===================================================================== */
+      const CALCULATOR_URLS = {
+        // Sekcja 1: Działania pisemne
+        dodawanie:          'kalkulator_dodawania_pisemnego.html',
+        odejmowanie:        'kalkulator_odejmowania_pisemnego.html',
+        mnozenie:           'kalkulator_mnozenia_pisemnego.html',
+        dzielenie:          'kalkulator_dzielenia_pisemnego.html',
+
+        // Sekcja 2: Podzielność, czynniki pierwsze, NWW i NWD
+        czynniki:           'kalkulator_czynniki_pierwsze.html',
+        nww:                'kalkulator_wyznaczania_nww.html',
+        nwd:                'kalkulator_wyznaczania_nwd.html',
+
+        // Sekcja 3: Ułamki zwykłe
+        ulamki_dodawanie:   'kalkulator_dodawania_ulamkow.html',
+        ulamki_odejmowanie: 'kalkulator_odejmowania_ulamkow.html',
+        ulamki_mnozenie:    'kalkulator_mnozenia_ulamkow.html',
+        ulamki_dzielenie:   'kalkulator_dzielenia_ulamkow.html'
+      };
+// ... existing code ... -->

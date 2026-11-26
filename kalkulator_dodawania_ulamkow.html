@@ -1,0 +1,2759 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator dodawania ułamków zwykłych</title>
+  <style>
+    /* =========================================================
+       ZMIENNE KOLORYSTYCZNE I TYPOGRAFIA (100% OFFLINE)
+       ========================================================= */
+    :root {
+      --bg-page: #f4f6fb;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --border-soft: #e2e8f0;
+
+      /* Kolory dydaktyczne */
+      --blue: #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-bg: #eff6ff;
+      --blue-border: #bfdbfe;
+      --blue-dark: #1e3a8a;
+
+      --green: #16a34a;
+      --green-bg: #dcfce7;
+      --green-border: #86efac;
+      --green-dark: #14532d;
+
+      --orange: #ea580c;
+      --orange-bg: #ffedd5;
+      --orange-border: #fdba74;
+      --orange-dark: #9a3412;
+
+      --purple: #7c3aed;
+      --purple-bg: #f3e8ff;
+      --purple-border: #d8b4fe;
+      --purple-dark: #4c1d95;
+
+      --amber: #d97706;
+      --amber-bg: #fef3c7;
+      --amber-border: #fcd34d;
+      --amber-dark: #92400e;
+
+      --teal: #0d9488;
+      --teal-bg: #ccfbf1;
+      --teal-border: #5eead4;
+      --teal-dark: #115e59;
+
+      --error-bg: #fef2f2;
+      --error-border: #fca5a5;
+      --error-text: #991b1b;
+
+      /* Kolory składników na kołach SVG */
+      --slice-1: #3b82f6;
+      --slice-2: #f97316;
+      --slice-3: #8b5cf6;
+
+      /* Kartka w kratkę z zeszytu */
+      --paper-bg: #fffef9;
+      --paper-grid: #d4e4f4;
+      --paper-margin: #fca5a5;
+      --grid-step: 26px;
+
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+      --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, "Courier New", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 20px 16px 48px;
+    }
+
+    /* =========================================================
+       UKŁAD GŁÓWNY, NAWIGACJA I NAGŁÓWEK
+       ========================================================= */
+    .app-wrapper {
+      max-width: 1220px;
+      margin: 0 auto;
+    }
+
+    .top-nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .btn-back-menu {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 15px;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #1e293b;
+      border: 1.5px solid #cbd5e1;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn-back-menu:hover,
+    .btn-back-menu:focus-visible {
+      background: var(--blue-bg);
+      border-color: var(--blue);
+      color: var(--blue);
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .app-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .app-title-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .app-logo {
+      width: 46px;
+      height: 46px;
+      background: linear-gradient(135deg, #2563eb, #16a34a);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.86rem;
+      font-weight: 900;
+      line-height: 1.05;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      flex-shrink: 0;
+    }
+
+    .app-logo-bar {
+      width: 22px;
+      height: 2.5px;
+      background: #ffffff;
+      border-radius: 2px;
+      margin: 2px 0;
+    }
+
+    .app-header h1 {
+      font-size: clamp(1.35rem, 3vw, 1.95rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .app-subtitle {
+      color: var(--text-muted);
+      font-size: 0.96rem;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 22px;
+      align-items: start;
+      margin-bottom: 22px;
+    }
+
+    @media (max-width: 980px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* =========================================================
+       KARTY (PANELE)
+       ========================================================= */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-md);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 1.04rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--text-main);
+    }
+
+    /* =========================================================
+       LEWY PANEL: GRAFICZNE POLA UŁAMKÓW I OPCJE
+       ========================================================= */
+    .fractions-editor {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px 8px;
+      padding: 14px 10px;
+      background: #f8fafc;
+      border: 1.5px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      margin-bottom: 12px;
+    }
+
+    .frac-editor-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 9px;
+      border-radius: var(--radius-md);
+      background: #ffffff;
+      border: 2px solid var(--border-soft);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .frac-editor-item.item-c1 { border-color: #93c5fd; }
+    .frac-editor-item.item-c2 { border-color: #fdba74; }
+    .frac-editor-item.item-c3 { border-color: #c4b5fd; }
+
+    .frac-dot-badge {
+      position: absolute;
+      top: -8px;
+      left: 10px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 1px 7px;
+      border-radius: 999px;
+      color: #ffffff;
+      letter-spacing: 0.02em;
+    }
+
+    .item-c1 .frac-dot-badge { background: var(--slice-1); }
+    .item-c2 .frac-dot-badge { background: var(--slice-2); }
+    .item-c3 .frac-dot-badge { background: var(--slice-3); }
+
+    .whole-input {
+      width: 46px;
+      height: 46px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-main);
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .whole-input::placeholder {
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .frac-stack-inputs {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .part-input {
+      width: 58px;
+      height: 36px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text-main);
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 7px;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .frac-input-bar {
+      width: 100%;
+      height: 3px;
+      background: #0f172a;
+      border-radius: 2px;
+    }
+
+    .whole-input:focus,
+    .part-input:focus {
+      outline: none;
+      border-color: var(--blue);
+      background: #ffffff;
+    }
+
+    .whole-input.is-invalid,
+    .part-input.is-invalid {
+      border-color: #dc2626 !important;
+      background: var(--error-bg) !important;
+    }
+
+    .plus-sep {
+      font-family: var(--font-mono);
+      font-size: 1.55rem;
+      font-weight: 900;
+      color: var(--blue);
+      user-select: none;
+      padding: 0 2px;
+    }
+
+    .input-legend-hint {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: -6px;
+      margin-bottom: 12px;
+    }
+
+    .btn-toggle-third {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1.5px dashed #cbd5e1;
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+      margin-bottom: 12px;
+    }
+
+    .btn-toggle-third:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: var(--blue-bg);
+    }
+
+    .btn-toggle-third.is-remove {
+      border-style: solid;
+      border-color: #fecaca;
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .btn-toggle-third.is-remove:hover {
+      background: #fee2e2;
+      border-color: #f87171;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 14px;
+      border-radius: var(--radius-md);
+      font-size: 0.93rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #ffffff;
+      flex: 1;
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.24);
+    }
+
+    .btn-primary:hover {
+      background: var(--blue-hover);
+    }
+
+    .btn-secondary {
+      background: #f8fafc;
+      color: var(--text-main);
+      border-color: #cbd5e1;
+    }
+
+    .btn-secondary:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .error-box {
+      display: none;
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      border-left: 4px solid #dc2626;
+      color: var(--error-text);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.86rem;
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+
+    .error-box.visible {
+      display: block;
+    }
+
+    .presets-label {
+      font-size: 0.77rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+    }
+
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .btn-preset {
+      background: var(--blue-bg);
+      color: var(--blue);
+      border: 1px solid var(--blue-border);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 0.79rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 1px;
+      font-family: var(--font-sans);
+    }
+
+    .btn-preset strong {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.84rem;
+      color: var(--blue-dark);
+    }
+
+    .btn-preset span {
+      font-size: 0.69rem;
+      color: #3b82f6;
+      line-height: 1.15;
+    }
+
+    .btn-preset:hover {
+      background: #dbeafe;
+      transform: translateY(-1px);
+    }
+
+    /* Przełącznik metody dla liczb mieszanych */
+    .method-box {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 11px 12px;
+      margin-bottom: 14px;
+    }
+
+    .method-box-title {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .method-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .method-tab {
+      padding: 7px 8px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--text-muted);
+      font-size: 0.79rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    .method-tab:hover {
+      border-color: #94a3b8;
+      color: var(--text-main);
+    }
+
+    .method-tab.is-active {
+      background: var(--blue);
+      color: #ffffff;
+      border-color: var(--blue);
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.22);
+    }
+
+    .options-box {
+      border-top: 1px solid var(--border-soft);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.87rem;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      line-height: 1.35;
+    }
+
+    .toggle-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      accent-color: var(--blue);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* =========================================================
+       PRAWY PANEL: NAGŁÓWEK, POSTĘP, KARTKA W KRATKĘ
+       ========================================================= */
+    .viz-top-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .badges-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stage-badge {
+      display: inline-flex;
+      align-items: center;
+      font-weight: 800;
+      font-size: 0.77rem;
+      padding: 4px 11px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border: 1px solid transparent;
+    }
+
+    .stage-start { background: var(--blue-bg); color: var(--blue-dark); border-color: var(--blue-border); }
+    .stage-improper { background: var(--orange-bg); color: var(--orange-dark); border-color: var(--orange-border); }
+    .stage-lcm { background: var(--amber-bg); color: var(--amber-dark); border-color: var(--amber-border); }
+    .stage-expand { background: var(--purple-bg); color: var(--purple-dark); border-color: var(--purple-border); }
+    .stage-add { background: var(--blue-bg); color: var(--blue-dark); border-color: var(--blue-border); }
+    .stage-whole { background: var(--teal-bg); color: var(--teal-dark); border-color: var(--teal-border); }
+    .stage-simplify { background: var(--orange-bg); color: var(--orange-dark); border-color: var(--orange-border); }
+    .stage-done { background: var(--green-bg); color: var(--green-dark); border-color: var(--green-border); }
+
+    .step-counter {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 7px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2563eb, #16a34a);
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    /* Kartka w kratkę z zeszytu */
+    .notebook-shell {
+      position: relative;
+      background-color: var(--paper-bg);
+      background-image:
+        linear-gradient(to right, var(--paper-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--paper-grid) 1px, transparent 1px);
+      background-size: var(--grid-step) var(--grid-step);
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.05), var(--shadow-sm);
+      overflow-x: auto;
+      padding: 22px 22px 26px 46px;
+      margin-bottom: 16px;
+      min-height: 290px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .notebook-shell::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 28px;
+      width: 2px;
+      background-color: var(--paper-margin);
+      opacity: 0.72;
+      pointer-events: none;
+    }
+
+    /* =========================================================
+       ZAPIS MATEMATYCZNY (KUMULATYWNE WIERSZE ZESZYTOWE)
+       ========================================================= */
+    .notebook-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .eq-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.78);
+      border: 1.5px solid rgba(203, 213, 225, 0.75);
+      transition: all 0.22s ease;
+    }
+
+    .eq-line.is-active {
+      background: rgba(255, 255, 255, 0.98);
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14), var(--shadow-sm);
+      animation: slideInRow 0.28s ease;
+    }
+
+    .eq-line.is-active.line-done {
+      border-color: var(--green);
+      background: #f0fdf4;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16), var(--shadow-sm);
+    }
+
+    .eq-line-tag {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 3px 8px;
+      min-width: 122px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .eq-line.is-active .eq-line-tag {
+      background: var(--blue-bg);
+      color: var(--blue-dark);
+      border-color: var(--blue-border);
+    }
+
+    .eq-line.is-active.line-done .eq-line-tag {
+      background: var(--green-bg);
+      color: var(--green-dark);
+      border-color: var(--green-border);
+    }
+
+    .eq-math {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    /* Pionowy ułamek (CSS Flexbox) */
+    .mixed {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      vertical-align: middle;
+    }
+
+    .whole-num {
+      font-size: 1.42rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .frac {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.12;
+      vertical-align: middle;
+    }
+
+    .frac-num {
+      padding: 0 7px 3px;
+      border-bottom: 2.5px solid currentColor;
+      min-width: 28px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .frac-den {
+      padding: 3px 7px 0;
+      min-width: 28px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .op-sym {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: #64748b;
+      padding: 0 2px;
+    }
+
+    /* Kolorowe oznaczenia składników i operacji */
+    .c-1 { color: #1d4ed8; }
+    .c-2 { color: #c2410c; }
+    .c-3 { color: #6d28d9; }
+    .c-res { color: var(--green-dark); }
+
+    .op-expand {
+      font-size: 0.84rem;
+      font-weight: 800;
+      color: var(--purple);
+      background: var(--purple-bg);
+      border: 1px solid var(--purple-border);
+      border-radius: 5px;
+      padding: 0 5px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    .op-simplify {
+      font-size: 0.84rem;
+      font-weight: 800;
+      color: var(--orange-dark);
+      background: var(--orange-bg);
+      border: 1px solid var(--orange-border);
+      border-radius: 5px;
+      padding: 0 5px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    .lcm-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--amber-bg);
+      color: var(--amber-dark);
+      border: 1.5px solid var(--amber-border);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-family: var(--font-mono);
+      font-size: 0.94rem;
+      font-weight: 800;
+    }
+
+    .final-result-box {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 13px;
+      border-radius: 10px;
+      background: var(--green-bg);
+      border: 2px solid var(--green);
+      color: var(--green-dark);
+    }
+
+    @keyframes slideInRow {
+      0% { transform: translateY(6px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    /* =========================================================
+       WIZUALIZACJA GRAFICZNA — KOŁA UŁAMKOWE SVG
+       ========================================================= */
+    .pies-panel {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1.5px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .pies-panel-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 0.79rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+
+    .pies-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 12px 10px;
+    }
+
+    .pie-group {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+    }
+
+    .pie-group.is-result-group {
+      background: #f0fdf4;
+      border-color: var(--green-border);
+    }
+
+    .pie-circles-wrap {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .pie-label {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .pie-op {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #64748b;
+    }
+
+    .pies-note {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      text-align: center;
+    }
+
+    /* =========================================================
+       KARTA WYJAŚNIENIA DYDAKTYCZNEGO
+       ========================================================= */
+    .explanation-card {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 5px solid var(--blue);
+      border-radius: var(--radius-md);
+      padding: 15px 18px;
+      margin-bottom: 16px;
+      min-height: 104px;
+      transition: border-left-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .explanation-card.theme-improper,
+    .explanation-card.theme-simplify {
+      background: #fff7ed;
+      border-color: #fed7aa;
+      border-left-color: var(--orange);
+    }
+
+    .explanation-card.theme-lcm {
+      background: #fffbeb;
+      border-color: #fde68a;
+      border-left-color: var(--amber);
+    }
+
+    .explanation-card.theme-expand {
+      background: #faf5ff;
+      border-color: #e9d5ff;
+      border-left-color: var(--purple);
+    }
+
+    .explanation-card.theme-whole {
+      background: #f0fdfa;
+      border-color: #99f6e4;
+      border-left-color: var(--teal);
+    }
+
+    .explanation-card.theme-done {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      border-left-color: var(--green);
+    }
+
+    .explanation-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--blue);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .explanation-card.theme-improper .explanation-title,
+    .explanation-card.theme-simplify .explanation-title { color: var(--orange-dark); }
+    .explanation-card.theme-lcm .explanation-title { color: var(--amber-dark); }
+    .explanation-card.theme-expand .explanation-title { color: var(--purple-dark); }
+    .explanation-card.theme-whole .explanation-title { color: var(--teal-dark); }
+    .explanation-card.theme-done .explanation-title { color: var(--green-dark); }
+
+    .explanation-body {
+      font-size: 0.98rem;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    .chip {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-size: 0.95em;
+    }
+
+    .chip-blue { background: var(--blue-bg); color: var(--blue-dark); }
+    .chip-green { background: var(--green-bg); color: var(--green-dark); }
+    .chip-purple { background: var(--purple-bg); color: var(--purple-dark); }
+    .chip-amber { background: var(--amber-bg); color: var(--amber-dark); }
+    .chip-orange { background: var(--orange-bg); color: var(--orange-dark); }
+    .chip-teal { background: var(--teal-bg); color: var(--teal-dark); }
+
+    /* =========================================================
+       STEROWANIE KROKAMI I SUWAK TEMPA
+       ========================================================= */
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .btn-ctrl {
+      padding: 10px 13px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-ctrl:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }
+
+    .btn-ctrl:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ctrl-primary {
+      background: var(--blue);
+      color: #ffffff;
+      border-color: var(--blue);
+    }
+
+    .btn-ctrl-primary:hover:not(:disabled) {
+      background: var(--blue-hover);
+      border-color: var(--blue-hover);
+    }
+
+    .btn-ctrl-play {
+      background: #0f766e;
+      color: #ffffff;
+      border-color: #0f766e;
+      min-width: 120px;
+    }
+
+    .btn-ctrl-play:hover:not(:disabled) {
+      background: #115e59;
+      border-color: #115e59;
+    }
+
+    .btn-ctrl-play.is-playing {
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+
+    .btn-ctrl-play.is-playing:hover:not(:disabled) {
+      background: #b45309;
+      border-color: #b45309;
+    }
+
+    .speed-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+    }
+
+    .speed-slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .speed-slider {
+      width: 130px;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    .speed-label-pill {
+      min-width: 68px;
+      text-align: center;
+      background: #e2e8f0;
+      color: var(--text-main);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .shortcuts-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      background: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    /* =========================================================
+       DOLNA SEKCJA: PODSUMOWANIE I ŚCIĄGAWKA
+       ========================================================= */
+    .bottom-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .summary-card {
+      border-top: 4px solid var(--green);
+    }
+
+    .final-eq-banner {
+      background: #f0fdf4;
+      border: 2px solid var(--green-border);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--green-dark);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+    }
+
+    .summary-tile {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+    }
+
+    .summary-tile-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .summary-tile-value {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.45;
+    }
+
+    .summary-tile-sub {
+      font-family: var(--font-sans);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Ściągawka (<details>) */
+    .edu-details {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .edu-details summary {
+      padding: 13px 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      transition: background-color 0.15s;
+    }
+
+    .edu-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .edu-details summary:hover {
+      background: #f1f5f9;
+    }
+
+    .edu-details summary::after {
+      content: "▾";
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+
+    .edu-details[open] summary::after {
+      transform: rotate(180deg);
+    }
+
+    .edu-details-body {
+      padding: 16px 18px 20px;
+      border-top: 1px solid var(--border-soft);
+      background: #ffffff;
+    }
+
+    .cheat-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 820px) {
+      .cheat-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .cheat-h3 {
+      font-size: 0.88rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+
+    .cheat-steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .cheat-steps li {
+      background: #f8fafc;
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .step-num-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 800;
+      margin-right: 7px;
+    }
+
+    .cheat-example-box {
+      background: #f0fdf4;
+      border: 1px solid var(--green-border);
+      border-left: 4px solid var(--green);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .cheat-ex-math {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--green-dark);
+    }
+
+    /* =========================================================
+       RESPONSYWNOŚĆ (TELEFON / TABLET)
+       ========================================================= */
+    @media (max-width: 600px) {
+      body {
+        padding: 14px 10px 34px;
+      }
+
+      .card {
+        padding: 15px;
+      }
+
+      .notebook-shell {
+        padding: 18px 12px 20px 32px;
+        min-height: 240px;
+      }
+
+      .notebook-shell::before {
+        left: 18px;
+      }
+
+      .eq-line {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .eq-math {
+        font-size: 1.05rem;
+      }
+
+      .controls-bar {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      #btn-end {
+        grid-column: span 2;
+      }
+
+      .shortcuts-hint {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- NAWIGACJA POWROTU DO MENU -->
+    <nav class="top-nav-bar" aria-label="Nawigacja główna">
+      <a href="index.html" target="_top" class="btn-back-menu" title="Wróć do menu głównego">← Menu</a>
+    </nav>
+
+    <!-- NAGŁÓWEK -->
+    <header class="app-header">
+      <div class="app-title-row">
+        <div class="app-logo" aria-hidden="true">
+          <span>a</span>
+          <span class="app-logo-bar"></span>
+          <span>b</span>
+        </div>
+        <h1>Kalkulator dodawania ułamków zwykłych</h1>
+      </div>
+      <p class="app-subtitle">Prześledź krok po kroku sprowadzanie do wspólnego mianownika, rozszerzanie, dodawanie, wyłączanie całości oraz skracanie ułamków na kartce w kratkę.</p>
+    </header>
+
+    <main class="main-grid">
+      <!-- LEWY PANEL: WPROWADZANIE UŁAMKÓW I OPCJE -->
+      <section class="card" aria-label="Wprowadzanie ułamków">
+        <h2 class="card-title">1. Wpisz ułamki do dodania</h2>
+
+        <!-- GRAFICZNY EDYTOR UŁAMKÓW -->
+        <div class="fractions-editor">
+          <!-- Ułamek 1 -->
+          <div class="frac-editor-item item-c1">
+            <span class="frac-dot-badge">1</span>
+            <input type="text" id="w1" class="whole-input" inputmode="numeric" value="" placeholder="0" aria-label="Całości pierwszego ułamka" title="Całości (opcjonalnie)">
+            <div class="frac-stack-inputs">
+              <input type="text" id="n1" class="part-input" inputmode="numeric" value="1" aria-label="Licznik pierwszego ułamka" title="Licznik">
+              <div class="frac-input-bar" aria-hidden="true"></div>
+              <input type="text" id="d1" class="part-input" inputmode="numeric" value="4" aria-label="Mianownik pierwszego ułamka" title="Mianownik">
+            </div>
+          </div>
+
+          <span class="plus-sep" aria-hidden="true">+</span>
+
+          <!-- Ułamek 2 -->
+          <div class="frac-editor-item item-c2">
+            <span class="frac-dot-badge">2</span>
+            <input type="text" id="w2" class="whole-input" inputmode="numeric" value="" placeholder="0" aria-label="Całości drugiego ułamka" title="Całości (opcjonalnie)">
+            <div class="frac-stack-inputs">
+              <input type="text" id="n2" class="part-input" inputmode="numeric" value="1" aria-label="Licznik drugiego ułamka" title="Licznik">
+              <div class="frac-input-bar" aria-hidden="true"></div>
+              <input type="text" id="d2" class="part-input" inputmode="numeric" value="6" aria-label="Mianownik drugiego ułamka" title="Mianownik">
+            </div>
+          </div>
+
+          <!-- Ułamek 3 (opcjonalny) -->
+          <span id="plus-sep-3" class="plus-sep" style="display: none;" aria-hidden="true">+</span>
+          <div id="item-3" class="frac-editor-item item-c3" style="display: none;">
+            <span class="frac-dot-badge">3</span>
+            <input type="text" id="w3" class="whole-input" inputmode="numeric" value="" placeholder="0" aria-label="Całości trzeciego ułamka" title="Całości (opcjonalnie)">
+            <div class="frac-stack-inputs">
+              <input type="text" id="n3" class="part-input" inputmode="numeric" value="1" aria-label="Licznik trzeciego ułamka" title="Licznik">
+              <div class="frac-input-bar" aria-hidden="true"></div>
+              <input type="text" id="d3" class="part-input" inputmode="numeric" value="6" aria-label="Mianownik trzeciego ułamka" title="Mianownik">
+            </div>
+          </div>
+        </div>
+        <p class="input-legend-hint">Po lewej stronie każdego ułamka możesz wpisać <strong>całości</strong> (pole może pozostać puste).</p>
+
+        <button type="button" id="btn-toggle-third" class="btn-toggle-third">+ Dodaj 3. ułamek</button>
+
+        <div class="action-row">
+          <button type="button" id="btn-calc" class="btn btn-primary">Oblicz krok po kroku</button>
+          <button type="button" id="btn-random" class="btn btn-secondary" title="Wylosuj szkolny przykład">🎲 Losuj</button>
+        </div>
+
+        <div id="error-box" class="error-box" role="alert"></div>
+
+        <!-- GOTOWE PRZYKŁADY -->
+        <div class="presets-label">Gotowe przykłady edukacyjne:</div>
+        <div class="presets-grid">
+          <button type="button" class="btn-preset" data-preset="sameDen">
+            <strong>1/5 + 2/5</strong>
+            <span>ten sam mianownik</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="diffDen">
+            <strong>1/4 + 1/6</strong>
+            <span>różne mianowniki</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="extractWhole">
+            <strong>3/4 + 5/6</strong>
+            <span>wyłączanie całości</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="mixed">
+            <strong>1 2/3 + 2 1/4</strong>
+            <span>liczby mieszane</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="mixedCarry">
+            <strong>2 5/6 + 1 3/4</strong>
+            <span>przekroczenie całości</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="threeOne">
+            <strong>1/2 + 1/3 + 1/6</strong>
+            <span>3 ułamki = 1!</span>
+          </button>
+        </div>
+
+        <!-- METODA DLA LICZB MIESZANYCH -->
+        <div class="method-box">
+          <div class="method-box-title">Metoda dla liczb mieszanych</div>
+          <div class="method-tabs" role="tablist" aria-label="Wybór metody dla liczb mieszanych">
+            <button type="button" id="method-separate" class="method-tab is-active" role="tab" aria-selected="true">Całości i ułamki osobno</button>
+            <button type="button" id="method-improper" class="method-tab" role="tab" aria-selected="false">Zamiana na ułamki niewłaściwe</button>
+          </div>
+        </div>
+
+        <!-- OPCJE WIDOKU -->
+        <div class="options-box">
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-pies" checked>
+            <span>Pokazuj wizualizację graficzną (koła ułamkowe SVG)</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="opt-hints" checked>
+            <span>Pokazuj podpowiedzi NWW i NWD</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- PRAWY PANEL: KARTKA W KRATKĘ, KOŁA SVG I STEROWANIE -->
+      <section class="card" aria-label="Wizualizacja dodawania ułamków">
+        <div class="viz-top-row">
+          <h2 class="card-title" style="margin-bottom: 0;">2. Obliczenia w zeszycie</h2>
+          <div class="badges-group">
+            <span id="stage-badge" class="stage-badge stage-start">Start</span>
+            <span id="step-counter" class="step-counter">Krok 0 z 0</span>
+          </div>
+        </div>
+
+        <!-- PASEK POSTĘPU -->
+        <div class="progress-track" aria-hidden="true">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+
+        <!-- KARTKA W KRATKĘ -->
+        <div class="notebook-shell">
+          <div id="notebook-lines" class="notebook-lines" aria-live="polite"></div>
+          <div id="pies-container"></div>
+        </div>
+
+        <!-- KARTA WYJAŚNIENIA DYDAKTYCZNEGO -->
+        <div id="explanation-card" class="explanation-card">
+          <div id="explanation-title" class="explanation-title">Start</div>
+          <div id="explanation-body" class="explanation-body"></div>
+        </div>
+
+        <!-- STEROWANIE KROKAMI -->
+        <div class="controls-bar">
+          <button type="button" id="btn-start" class="btn-ctrl" title="Wróć na początek">⏮ Początek</button>
+          <button type="button" id="btn-prev" class="btn-ctrl" title="Poprzedni krok (Strzałka w lewo)">◀ Poprzedni</button>
+          <button type="button" id="btn-play" class="btn-ctrl btn-ctrl-play" title="Odtwórz / Pauza (Spacja)">▶ Odtwórz</button>
+          <button type="button" id="btn-next" class="btn-ctrl btn-ctrl-primary" title="Następny krok (Strzałka w prawo)">Następny ▶</button>
+          <button type="button" id="btn-end" class="btn-ctrl" title="Przejdź do końca">Koniec ⏭</button>
+        </div>
+
+        <!-- SUWAK TEMPA I SKRÓTY -->
+        <div class="speed-row">
+          <label class="speed-slider-wrap" for="speed-slider">
+            <span>Tempo:</span>
+            <input type="range" id="speed-slider" class="speed-slider" min="1" max="3" step="1" value="2">
+            <span id="speed-label" class="speed-label-pill">Średnio</span>
+          </label>
+          <div class="shortcuts-hint">
+            Skróty: <span class="kbd">←</span> <span class="kbd">→</span> krok, <span class="kbd">Spacja</span> odtwórz/pauza
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- DOLNA SEKCJA: PODSUMOWANIE I ŚCIĄGAWKA -->
+    <div class="bottom-stack">
+      <section class="card summary-card" aria-label="Podsumowanie wyniku">
+        <h2 class="card-title">Podsumowanie wyniku</h2>
+
+        <div id="final-eq-banner" class="final-eq-banner"></div>
+
+        <div class="summary-grid">
+          <div class="summary-tile">
+            <div class="summary-tile-label">Postać nieskracalna</div>
+            <div id="sum-reduced" class="summary-tile-value"></div>
+            <div id="sum-reduced-sub" class="summary-tile-sub"></div>
+          </div>
+
+          <div class="summary-tile">
+            <div class="summary-tile-label">Postać ułamka niewłaściwego</div>
+            <div id="sum-improper" class="summary-tile-value"></div>
+            <div class="summary-tile-sub">po skróceniu</div>
+          </div>
+
+          <div class="summary-tile">
+            <div class="summary-tile-label">Rozwinięcie dziesiętne</div>
+            <div id="sum-decimal" class="summary-tile-value"></div>
+            <div id="sum-decimal-sub" class="summary-tile-sub"></div>
+          </div>
+
+          <div class="summary-tile">
+            <div class="summary-tile-label">Użyte NWW i NWD</div>
+            <div id="sum-nww-nwd" class="summary-tile-value" style="font-size: 0.98rem;"></div>
+            <div id="sum-nww-nwd-sub" class="summary-tile-sub"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ŚCIĄGAWKA -->
+      <section class="card" aria-label="Ściągawka matematyczna">
+        <details class="edu-details">
+          <summary>📘 Ściągawka: Jak dodawać ułamki zwykłe?</summary>
+          <div class="edu-details-body">
+            <div class="cheat-grid">
+              <div>
+                <h3 class="cheat-h3">4 złote kroki dodawania ułamków</h3>
+                <ol class="cheat-steps">
+                  <li><span class="step-num-badge">1</span><strong>Wspólny mianownik:</strong> Jeśli mianowniki są różne, wyznacz ich <strong>NWW</strong> (Najmniejszą Wspólną Wielokrotność) — to będzie najmniejszy wspólny mianownik.</li>
+                  <li><span class="step-num-badge">2</span><strong>Rozszerzanie:</strong> Pomnóż licznik i mianownik każdego ułamka przez tę samą liczbę, aby otrzymać wspólny mianownik.</li>
+                  <li><span class="step-num-badge">3</span><strong>Dodawanie liczników:</strong> Dodaj liczniki, a <strong>wspólny mianownik przepisz bez zmian!</strong> (W liczbach mieszanych możesz dodać osobno całości i osobno ułamki).</li>
+                  <li><span class="step-num-badge">4</span><strong>Wyłączanie całości i skracanie:</strong> Jeśli licznik jest większy lub równy mianownikowi — wyłącz całości. Następnie podziel licznik i mianownik przez ich <strong>NWD</strong>, aby otrzymać ułamek nieskracalny.</li>
+                </ol>
+              </div>
+
+              <div>
+                <h3 class="cheat-h3">Krótki przykład</h3>
+                <div class="cheat-example-box">
+                  Dodajemy <strong>1/4 + 1/6</strong>.<br>
+                  Najmniejszy wspólny mianownik to <strong>NWW(4, 6) = 12</strong>.<br>
+                  Pierwszy ułamek rozszerzamy przez <strong>3</strong>, a drugi przez <strong>2</strong>:
+                  <div class="cheat-ex-math">
+                    <span class="frac"><span class="frac-num">1</span><span class="frac-den">4</span></span>
+                    <span>+</span>
+                    <span class="frac"><span class="frac-num">1</span><span class="frac-den">6</span></span>
+                    <span>=</span>
+                    <span class="frac"><span class="frac-num">3</span><span class="frac-den">12</span></span>
+                    <span>+</span>
+                    <span class="frac"><span class="frac-num">2</span><span class="frac-den">12</span></span>
+                    <span>=</span>
+                    <span class="frac"><span class="frac-num">5</span><span class="frac-den">12</span></span>
+                  </div>
+                  <div style="margin-top: 8px; font-size: 0.84rem; color: #065f46;">
+                    NWD(5, 12) = 1, więc wynik <strong>5/12</strong> jest już nieskracalny!
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * KALKULATOR DODAWANIA UŁAMKÓW ZWYKŁYCH
+     * 100% offline, arytmetyka całkowitoliczbowa BigInt (brak błędów zaokrągleń),
+     * wizualizacja kumulatywna na kartce w kratkę oraz dynamiczne koła ułamkowe SVG.
+     */
+    (function () {
+      'use strict';
+
+      // =========================================================
+      // PRZYKŁADY, LOSOWANIE I KONFIGURACJA TEMPA
+      // =========================================================
+      const PRESETS = {
+        sameDen:      [{ w: '', n: 1, d: 5 }, { w: '', n: 2, d: 5 }],
+        diffDen:      [{ w: '', n: 1, d: 4 }, { w: '', n: 1, d: 6 }],
+        extractWhole: [{ w: '', n: 3, d: 4 }, { w: '', n: 5, d: 6 }],
+        mixed:        [{ w: 1, n: 2, d: 3 }, { w: 2, n: 1, d: 4 }],
+        mixedCarry:   [{ w: 2, n: 5, d: 6 }, { w: 1, n: 3, d: 4 }],
+        threeOne:     [{ w: '', n: 1, d: 2 }, { w: '', n: 1, d: 3 }, { w: '', n: 1, d: 6 }]
+      };
+
+      const RANDOM_POOL_2 = [
+        [{ w: '', n: 1, d: 3 }, { w: '', n: 1, d: 6 }],
+        [{ w: '', n: 2, d: 5 }, { w: '', n: 1, d: 10 }],
+        [{ w: '', n: 3, d: 8 }, { w: '', n: 1, d: 4 }],
+        [{ w: '', n: 2, d: 3 }, { w: '', n: 3, d: 4 }],
+        [{ w: '', n: 5, d: 6 }, { w: '', n: 7, d: 8 }],
+        [{ w: 1, n: 1, d: 2 }, { w: 1, n: 1, d: 3 }],
+        [{ w: 1, n: 3, d: 4 }, { w: 2, n: 1, d: 6 }],
+        [{ w: 2, n: 2, d: 5 }, { w: 1, n: 3, d: 10 }],
+        [{ w: '', n: 5, d: 12 }, { w: '', n: 7, d: 12 }],
+        [{ w: 1, n: 5, d: 8 }, { w: 1, n: 7, d: 12 }],
+        [{ w: '', n: 1, d: 4 }, { w: '', n: 2, d: 5 }],
+        [{ w: 2, n: 1, d: 3 }, { w: '', n: 5, d: 6 }]
+      ];
+
+      const RANDOM_POOL_3 = [
+        [{ w: '', n: 1, d: 2 }, { w: '', n: 1, d: 4 }, { w: '', n: 1, d: 8 }],
+        [{ w: '', n: 1, d: 3 }, { w: '', n: 1, d: 4 }, { w: '', n: 1, d: 6 }],
+        [{ w: '', n: 2, d: 5 }, { w: '', n: 1, d: 2 }, { w: '', n: 3, d: 10 }],
+        [{ w: 1, n: 1, d: 2 }, { w: '', n: 2, d: 3 }, { w: '', n: 1, d: 6 }],
+        [{ w: '', n: 1, d: 6 }, { w: '', n: 3, d: 4 }, { w: '', n: 5, d: 12 }],
+        [{ w: 1, n: 1, d: 4 }, { w: 1, n: 1, d: 3 }, { w: '', n: 5, d: 12 }],
+        [{ w: '', n: 3, d: 8 }, { w: '', n: 1, d: 6 }, { w: '', n: 5, d: 12 }]
+      ];
+
+      const SPEED_MAP = {
+        1: { label: 'Wolno', ms: 2400 },
+        2: { label: 'Średnio', ms: 1500 },
+        3: { label: 'Szybko', ms: 800 }
+      };
+
+      const SLICE_COLORS = ['#3b82f6', '#f97316', '#8b5cf6'];
+
+      // =========================================================
+      // STAN APLIKACJI
+      // =========================================================
+      const state = {
+        hasThird: false,
+        mixedMethod: 'separate', // 'separate' | 'improper'
+        showPies: true,
+        showHints: true,
+        model: null,
+        currentStep: 0,
+        isPlaying: false,
+        playTimer: null,
+        speedLevel: 2
+      };
+
+      // =========================================================
+      // ELEMENTY DOM
+      // =========================================================
+      const elInputs = [
+        { w: document.getElementById('w1'), n: document.getElementById('n1'), d: document.getElementById('d1') },
+        { w: document.getElementById('w2'), n: document.getElementById('n2'), d: document.getElementById('d2') },
+        { w: document.getElementById('w3'), n: document.getElementById('n3'), d: document.getElementById('d3') }
+      ];
+      const elPlusSep3 = document.getElementById('plus-sep-3');
+      const elItem3 = document.getElementById('item-3');
+      const elBtnToggleThird = document.getElementById('btn-toggle-third');
+      const elBtnCalc = document.getElementById('btn-calc');
+      const elBtnRandom = document.getElementById('btn-random');
+      const elErrorBox = document.getElementById('error-box');
+
+      const elMethodSeparate = document.getElementById('method-separate');
+      const elMethodImproper = document.getElementById('method-improper');
+      const elOptPies = document.getElementById('opt-pies');
+      const elOptHints = document.getElementById('opt-hints');
+
+      const elStageBadge = document.getElementById('stage-badge');
+      const elStepCounter = document.getElementById('step-counter');
+      const elProgressFill = document.getElementById('progress-fill');
+      const elNotebookLines = document.getElementById('notebook-lines');
+      const elPiesContainer = document.getElementById('pies-container');
+      const elExplanationCard = document.getElementById('explanation-card');
+      const elExplanationTitle = document.getElementById('explanation-title');
+      const elExplanationBody = document.getElementById('explanation-body');
+
+      const elBtnStart = document.getElementById('btn-start');
+      const elBtnPrev = document.getElementById('btn-prev');
+      const elBtnPlay = document.getElementById('btn-play');
+      const elBtnNext = document.getElementById('btn-next');
+      const elBtnEnd = document.getElementById('btn-end');
+      const elSpeedSlider = document.getElementById('speed-slider');
+      const elSpeedLabel = document.getElementById('speed-label');
+
+      const elFinalEqBanner = document.getElementById('final-eq-banner');
+      const elSumReduced = document.getElementById('sum-reduced');
+      const elSumReducedSub = document.getElementById('sum-reduced-sub');
+      const elSumImproper = document.getElementById('sum-improper');
+      const elSumDecimal = document.getElementById('sum-decimal');
+      const elSumDecimalSub = document.getElementById('sum-decimal-sub');
+      const elSumNwwNwd = document.getElementById('sum-nww-nwd');
+      const elSumNwwNwdSub = document.getElementById('sum-nww-nwd-sub');
+
+      // =========================================================
+      // FUNKCJE MATEMATYCZNE (DOKŁADNE BIGINT)
+      // =========================================================
+
+      function formatInt(val) {
+        return String(val).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+      }
+
+      function gcdBig(a, b) {
+        let x = a < 0n ? -a : a;
+        let y = b < 0n ? -b : b;
+        while (y !== 0n) {
+          const t = x % y;
+          x = y;
+          y = t;
+        }
+        return x;
+      }
+
+      function lcmBig(a, b) {
+        if (a === 0n || b === 0n) return 0n;
+        return (a / gcdBig(a, b)) * b;
+      }
+
+      /**
+       * Zwraca informację o rozwinięciu dziesiętnym ułamka nieskracalnego num / den.
+       */
+      function formatDecimalExpansion(num, den) {
+        if (num === 0n) {
+          return { text: '0', exact: true };
+        }
+        const whole = num / den;
+        let rem = num % den;
+        if (rem === 0n) {
+          return { text: formatInt(whole), exact: true };
+        }
+
+        // Sprawdzamy, czy mianownik po podzieleniu przez 2 i 5 daje 1 (rozwinięcie skończone)
+        let dCheck = den;
+        while (dCheck % 2n === 0n) dCheck /= 2n;
+        while (dCheck % 5n === 0n) dCheck /= 5n;
+        const isExact = dCheck === 1n;
+
+        const maxDigits = isExact ? 12 : 4;
+        let fracDigits = '';
+        let remCalc = rem;
+        for (let i = 0; i < maxDigits && remCalc !== 0n; i++) {
+          remCalc *= 10n;
+          fracDigits += (remCalc / den).toString();
+          remCalc = remCalc % den;
+        }
+
+        if (!isExact && remCalc !== 0n) {
+          // Zaokrąglenie ostatniej z 4 cyfr
+          const nextDigit = (remCalc * 10n) / den;
+          if (nextDigit >= 5n) {
+            const rounded = (BigInt(fracDigits) + 1n).toString().padStart(maxDigits, '0');
+            if (rounded.length > maxDigits) {
+              return { text: `≈ ${formatInt(whole + 1n)},0000`, exact: false };
+            }
+            fracDigits = rounded;
+          }
+          return { text: `≈ ${formatInt(whole)},${fracDigits}`, exact: false };
+        }
+
+        return { text: `${formatInt(whole)},${fracDigits}`, exact: true };
+      }
+
+      // =========================================================
+      // HELPERY DO BUDOWANIA HTML UŁAMKÓW
+      // =========================================================
+
+      function fracHtml(num, den, extraClass = '', numSuffix = '', denSuffix = '') {
+        return `<span class="frac ${extraClass}"><span class="frac-num">${formatInt(num)}${numSuffix}</span><span class="frac-den">${formatInt(den)}${denSuffix}</span></span>`;
+      }
+
+      function mixedHtml(w, n, d, extraClass = '', numSuffix = '', denSuffix = '') {
+        if (w > 0n && n === 0n) {
+          return `<span class="mixed ${extraClass}"><span class="whole-num">${formatInt(w)}</span></span>`;
+        }
+        if (w > 0n) {
+          return `<span class="mixed ${extraClass}"><span class="whole-num">${formatInt(w)}</span>${fracHtml(n, d, '', numSuffix, denSuffix)}</span>`;
+        }
+        return fracHtml(n, d, extraClass, numSuffix, denSuffix);
+      }
+
+      function plainTextFrac(w, n, d) {
+        if (w > 0n && n === 0n) return formatInt(w);
+        if (w > 0n) return `${formatInt(w)} ${formatInt(n)}/${formatInt(d)}`;
+        return `${formatInt(n)}/${formatInt(d)}`;
+      }
+
+      function joinTermsHtml(itemsHtml, op = '+') {
+        return itemsHtml.join(`<span class="op-sym">${op}</span>`);
+      }
+
+      // =========================================================
+      // SILNIK OBLICZEŃ I GENERATOR KROKÓW
+      // =========================================================
+
+      function buildAdditionModel(rawTerms, mixedMethod) {
+        const terms = rawTerms.map((t, idx) => ({
+          idx,
+          w: BigInt(t.w),
+          n: BigInt(t.n),
+          d: BigInt(t.d),
+          colorClass: `c-${idx + 1}`
+        }));
+
+        const hasAnyWhole = terms.some(t => t.w > 0n);
+        const useImproperMethod = mixedMethod === 'improper' && hasAnyWhole;
+
+        // Robocze składniki (po ewentualnej zamianie na niewłaściwe)
+        const workTerms = useImproperMethod
+          ? terms.map(t => ({
+              idx: t.idx,
+              w: 0n,
+              n: t.w * t.d + t.n,
+              d: t.d,
+              colorClass: t.colorClass
+            }))
+          : terms.map(t => ({ ...t }));
+
+        // Wyznaczamy wspólny mianownik (NWW wszystkich mianowników)
+        const denominators = workTerms.map(t => t.d);
+        const allSameDen = denominators.every(d => d === denominators[0]);
+        const commonDen = denominators.reduce((acc, d) => lcmBig(acc, d));
+        const multipliers = workTerms.map(t => commonDen / t.d);
+
+        // Rozszerzone składniki
+        const expandedTerms = workTerms.map((t, idx) => ({
+          idx: t.idx,
+          w: t.w,
+          n: t.n * multipliers[idx],
+          d: commonDen,
+          mult: multipliers[idx],
+          colorClass: t.colorClass
+        }));
+
+        // Sumowanie
+        const sumWholes = expandedTerms.reduce((acc, t) => acc + t.w, 0n);
+        const sumNums = expandedTerms.reduce((acc, t) => acc + t.n, 0n);
+
+        // Wyłączanie całości
+        const extraWholes = sumNums / commonDen;
+        const remNum = sumNums % commonDen;
+        const afterWholeW = sumWholes + extraWholes;
+        const afterWholeN = remNum;
+
+        // Skracanie części ułamkowej
+        const simplifyGcd = afterWholeN > 0n ? gcdBig(afterWholeN, commonDen) : 1n;
+        const finalW = afterWholeW;
+        const finalN = afterWholeN / simplifyGcd;
+        const finalD = commonDen / simplifyGcd;
+
+        // Całkowity ułamek niewłaściwy (po skróceniu)
+        const totalImproperNum = finalW * finalD + finalN;
+        const totalImproperDen = finalD;
+        const decimalInfo = formatDecimalExpansion(totalImproperNum, totalImproperDen);
+
+        // Przygotowanie opisu NWW
+        const denListStr = denominators.map(formatInt).join(', ');
+
+        // Kumulatywne wiersze na kartce w kratkę
+        const steps = [];
+        const linesSoFar = [];
+
+        function pushStep(cfg) {
+          if (cfg.newLine) {
+            linesSoFar.push(cfg.newLine);
+          }
+          steps.push({
+            stage: cfg.stage,
+            stageLabel: cfg.stageLabel,
+            title: cfg.title,
+            explanationHtml: cfg.explanationHtml,
+            hintHtml: cfg.hintHtml || '',
+            lines: linesSoFar.map(l => ({ ...l })),
+            pieMode: cfg.pieMode // 'original' | 'expanded' | 'added' | 'final'
+          });
+        }
+
+        // ---------------------------------------------------------
+        // KROK 0: START (zapis działania)
+        // ---------------------------------------------------------
+        const startMathHtml = joinTermsHtml(
+          terms.map(t => mixedHtml(t.w, t.n, t.d, t.colorClass))
+        );
+
+        let startExplain = `Mamy do dodania ułamki: ${terms.map(t => `<span class="chip chip-blue">${plainTextFrac(t.w, t.n, t.d)}</span>`).join(' + ')}. `;
+        if (useImproperMethod) {
+          startExplain += 'Wybrano metodę <strong>zamiany na ułamki niewłaściwe</strong> — w pierwszym kroku zamienimy liczby mieszane na ułamki niewłaściwe.';
+        } else if (allSameDen) {
+          startExplain += `Mianowniki są już jednakowe (<span class="chip chip-amber">${formatInt(commonDen)}</span>), więc od razu przejdziemy do dodawania!`;
+        } else {
+          startExplain += 'Mianowniki są różne, dlatego najpierw znajdziemy wspólny mianownik.';
+        }
+
+        pushStep({
+          stage: 'start',
+          stageLabel: 'Start',
+          title: 'Zapisujemy działanie w zeszycie',
+          explanationHtml: startExplain,
+          pieMode: 'original',
+          newLine: {
+            tag: 'Działanie',
+            html: startMathHtml
+          }
+        });
+
+        // ---------------------------------------------------------
+        // KROK OPCJONALNY: ZAMIANA NA UŁAMKI NIEWŁAŚCIWE
+        // ---------------------------------------------------------
+        if (useImproperMethod) {
+          const convDetails = terms.map((t, i) => {
+            if (t.w > 0n) {
+              return `<span class="frac ${t.colorClass}"><span class="frac-num">${formatInt(t.w)} · ${formatInt(t.d)} + ${formatInt(t.n)}</span><span class="frac-den">${formatInt(t.d)}</span></span>`;
+            }
+            return fracHtml(t.n, t.d, t.colorClass);
+          });
+          const convResult = workTerms.map(t => fracHtml(t.n, t.d, t.colorClass));
+
+          const convTextParts = terms
+            .filter(t => t.w > 0n)
+            .map(t => `<span class="chip chip-orange">${plainTextFrac(t.w, t.n, t.d)} = (${formatInt(t.w)}·${formatInt(t.d)}+${formatInt(t.n)})/${formatInt(t.d)} = ${formatInt(t.w * t.d + t.n)}/${formatInt(t.d)}</span>`);
+
+          pushStep({
+            stage: 'improper',
+            stageLabel: 'Zamiana na niewłaściwe',
+            title: 'Zamieniamy liczby mieszane na ułamki niewłaściwe',
+            explanationHtml: `Mnożymy całości przez mianownik i dodajemy licznik: ${convTextParts.join(', ')}.`,
+            pieMode: 'original',
+            newLine: {
+              tag: 'Niewłaściwe',
+              html: `<span class="op-sym">=</span>${joinTermsHtml(convDetails)}<span class="op-sym">=</span>${joinTermsHtml(convResult)}`
+            }
+          });
+        }
+
+        // ---------------------------------------------------------
+        // KROKI: WSPÓLNY MIANOWNIK I ROZSZERZANIE (gdy mianowniki różne)
+        // ---------------------------------------------------------
+        if (!allSameDen) {
+          pushStep({
+            stage: 'lcm',
+            stageLabel: 'Wspólny mianownik',
+            title: `Wyznaczamy wspólny mianownik: ${formatInt(commonDen)}`,
+            explanationHtml: `Mianowniki <span class="chip chip-amber">${denListStr}</span> są różne. Najmniejsza liczba, która dzieli się przez każdy z nich bez reszty, to <span class="chip chip-amber">${formatInt(commonDen)}</span>.`,
+            hintHtml: ` <strong>Podpowiedź NWW:</strong> NWW(${denListStr}) = <span class="chip chip-amber">${formatInt(commonDen)}</span>.`,
+            pieMode: 'original',
+            newLine: {
+              tag: 'Wsp. mianownik',
+              html: `<span class="lcm-pill">Wspólny mianownik = NWW(${denListStr}) = ${formatInt(commonDen)}</span>`
+            }
+          });
+
+          // Krok rozszerzania (pokazujemy × k przy liczniku i mianowniku oraz wynik rozszerzenia)
+          const expandOpsHtml = workTerms.map((t, i) => {
+            const m = multipliers[i];
+            if (m > 1n) {
+              const badge = `<span class="op-expand">× ${formatInt(m)}</span>`;
+              return mixedHtml(t.w, t.n, t.d, t.colorClass, badge, badge);
+            }
+            return mixedHtml(t.w, t.n, t.d, t.colorClass);
+          });
+
+          const expandedResHtml = expandedTerms.map(t => mixedHtml(t.w, t.n, t.d, t.colorClass));
+
+          const multDesc = workTerms.map((t, i) => {
+            const m = multipliers[i];
+            if (m === 1n) {
+              return `ułamek <span class="chip chip-blue">${plainTextFrac(t.w, t.n, t.d)}</span> ma już mianownik ${formatInt(commonDen)}`;
+            }
+            return `<span class="chip chip-purple">${plainTextFrac(t.w, t.n, t.d)}</span> rozszerzamy przez <strong>${formatInt(m)}</strong> (bo ${formatInt(commonDen)} : ${formatInt(t.d)} = ${formatInt(m)})`;
+          });
+
+          pushStep({
+            stage: 'expand',
+            stageLabel: 'Rozszerzanie',
+            title: 'Rozszerzamy ułamki do wspólnego mianownika',
+            explanationHtml: `Mnożymy licznik i mianownik przez odpowiednią liczbę: ${multDesc.join('; ')}. Wartość ułamków pozostaje taka sama!`,
+            pieMode: 'expanded',
+            newLine: {
+              tag: 'Rozszerzanie',
+              html: `<span class="op-sym">=</span>${joinTermsHtml(expandOpsHtml)}<span class="op-sym">=</span>${joinTermsHtml(expandedResHtml)}`
+            }
+          });
+        }
+
+        // ---------------------------------------------------------
+        // KROK: DODAWANIE LICZNIKÓW (I CAŁOŚCI)
+        // ---------------------------------------------------------
+        const numSumExpr = expandedTerms.map(t => formatInt(t.n)).join(' + ');
+        let addLineHtml = '';
+        let addExplain = '';
+
+        if (!useImproperMethod && sumWholes > 0n) {
+          const wholeTermsNonZero = expandedTerms.filter(t => t.w > 0n);
+          const wholeSumExpr = wholeTermsNonZero.length > 1
+            ? `(${wholeTermsNonZero.map(t => formatInt(t.w)).join(' + ')})`
+            : formatInt(sumWholes);
+
+          addLineHtml = `<span class="op-sym">=</span><span class="mixed"><span class="whole-num">${wholeSumExpr}</span><span class="frac"><span class="frac-num">${numSumExpr}</span><span class="frac-den">${formatInt(commonDen)}</span></span></span><span class="op-sym">=</span>${mixedHtml(sumWholes, sumNums, commonDen, 'c-res')}`;
+          addExplain = `Dodajemy osobno całości (${wholeTermsNonZero.map(t => formatInt(t.w)).join(' + ')} = <span class="chip chip-blue">${formatInt(sumWholes)}</span>) i osobno liczniki (${numSumExpr} = <span class="chip chip-blue">${formatInt(sumNums)}</span>). Wspólny mianownik <span class="chip chip-amber">${formatInt(commonDen)}</span> przepisujemy bez zmian!`;
+        } else {
+          addLineHtml = `<span class="op-sym">=</span><span class="frac"><span class="frac-num">${numSumExpr}</span><span class="frac-den">${formatInt(commonDen)}</span></span><span class="op-sym">=</span>${fracHtml(sumNums, commonDen, 'c-res')}`;
+          addExplain = `Dodajemy liczniki: <span class="chip chip-blue">${numSumExpr} = ${formatInt(sumNums)}</span>, a wspólny mianownik <span class="chip chip-amber">${formatInt(commonDen)}</span> przepisujemy bez zmian!`;
+        }
+
+        pushStep({
+          stage: 'add',
+          stageLabel: 'Dodawanie',
+          title: 'Dodajemy liczniki (mianownik bez zmian)',
+          explanationHtml: addExplain,
+          pieMode: 'added',
+          newLine: {
+            tag: 'Dodawanie',
+            html: addLineHtml
+          }
+        });
+
+        // ---------------------------------------------------------
+        // KROK OPCJONALNY: WYŁĄCZANIE CAŁOŚCI
+        // ---------------------------------------------------------
+        if (extraWholes > 0n) {
+          let wholeLineHtml = '';
+          let wholeExplain = '';
+
+          if (sumWholes > 0n) {
+            const extraPartHtml = afterWholeN > 0n
+              ? mixedHtml(extraWholes, afterWholeN, commonDen, 'c-res')
+              : `<span class="whole-num c-res">${formatInt(extraWholes)}</span>`;
+            wholeLineHtml = `<span class="op-sym">=</span><span class="whole-num">${formatInt(sumWholes)}</span><span class="op-sym">+</span>${extraPartHtml}<span class="op-sym">=</span>${mixedHtml(afterWholeW, afterWholeN, commonDen, 'c-res')}`;
+            wholeExplain = `Ułamek <span class="chip chip-teal">${formatInt(sumNums)}/${formatInt(commonDen)}</span> jest niewłaściwy (licznik ≥ mianownik). Ponieważ ${formatInt(commonDen)} mieści się w ${formatInt(sumNums)} dokładnie <strong>${formatInt(extraWholes)}</strong> ${extraWholes === 1n ? 'raz' : 'razy'}${afterWholeN > 0n ? ` z resztą <strong>${formatInt(afterWholeN)}</strong>` : ' bez reszty'}, dodajemy ${formatInt(extraWholes)} do dotychczasowych ${formatInt(sumWholes)} całości i otrzymujemy <span class="chip chip-teal">${plainTextFrac(afterWholeW, afterWholeN, commonDen)}</span>.`;
+          } else {
+            wholeLineHtml = `<span class="op-sym">=</span>${mixedHtml(afterWholeW, afterWholeN, commonDen, 'c-res')}`;
+            wholeExplain = `Licznik <span class="chip chip-teal">${formatInt(sumNums)}</span> jest większy lub równy mianownikowi <span class="chip chip-amber">${formatInt(commonDen)}</span>, więc wyłączamy całości: <span class="chip chip-teal">${formatInt(sumNums)} : ${formatInt(commonDen)} = ${formatInt(extraWholes)}</span>${afterWholeN > 0n ? ` (reszta <strong>${formatInt(afterWholeN)}</strong>)` : ' (bez reszty!)'}. Otrzymujemy <span class="chip chip-teal">${plainTextFrac(afterWholeW, afterWholeN, commonDen)}</span>.`;
+          }
+
+          pushStep({
+            stage: 'whole',
+            stageLabel: 'Wyłączanie całości',
+            title: 'Wyłączamy całości z ułamka niewłaściwego',
+            explanationHtml: wholeExplain,
+            pieMode: 'added',
+            newLine: {
+              tag: 'Całości',
+              html: wholeLineHtml
+            }
+          });
+        }
+
+        // ---------------------------------------------------------
+        // KROK OPCJONALNY: SKRACANIE UŁAMKA
+        // ---------------------------------------------------------
+        if (simplifyGcd > 1n) {
+          const divBadge = `<span class="op-simplify">: ${formatInt(simplifyGcd)}</span>`;
+          const simplifyOpHtml = mixedHtml(afterWholeW, afterWholeN, commonDen, '', divBadge, divBadge);
+          const simplifiedResHtml = mixedHtml(finalW, finalN, finalD, 'c-res');
+
+          pushStep({
+            stage: 'simplify',
+            stageLabel: 'Skracanie',
+            title: `Skracamy ułamek przez ${formatInt(simplifyGcd)}`,
+            explanationHtml: `Licznik <span class="chip chip-orange">${formatInt(afterWholeN)}</span> i mianownik <span class="chip chip-orange">${formatInt(commonDen)}</span> mają wspólny dzielnik <span class="chip chip-orange">${formatInt(simplifyGcd)}</span>. Dzielimy oba przez ${formatInt(simplifyGcd)}, aby otrzymać ułamek nieskracalny: <span class="chip chip-green">${plainTextFrac(finalW, finalN, finalD)}</span>.`,
+            hintHtml: ` <strong>Podpowiedź NWD:</strong> NWD(${formatInt(afterWholeN)}, ${formatInt(commonDen)}) = <span class="chip chip-orange">${formatInt(simplifyGcd)}</span>.`,
+            pieMode: 'final',
+            newLine: {
+              tag: 'Skracanie',
+              html: `<span class="op-sym">=</span>${simplifyOpHtml}<span class="op-sym">=</span>${simplifiedResHtml}`
+            }
+          });
+        }
+
+        // ---------------------------------------------------------
+        // KROK KOŃCOWY: WYNIK
+        // ---------------------------------------------------------
+        const finalBoxHtml = `<span class="final-result-box">${finalN === 0n ? `<span class="whole-num">${formatInt(finalW)}</span>` : mixedHtml(finalW, finalN, finalD)}</span>`;
+        let doneExplain = `Gotowe! Pełny wynik w postaci nieskracalnej to <span class="chip chip-green">${finalN === 0n ? formatInt(finalW) : plainTextFrac(finalW, finalN, finalD)}</span>.`;
+        if (finalN > 0n && simplifyGcd === 1n) {
+          doneExplain += ` Ułamka <span class="chip chip-green">${formatInt(finalN)}/${formatInt(finalD)}</span> nie można już skrócić.`;
+        }
+        const doneHint = finalN > 0n && simplifyGcd === 1n
+          ? ` <strong>Podpowiedź NWD:</strong> NWD(${formatInt(finalN)}, ${formatInt(finalD)}) = 1 (ułamek nieskracalny).`
+          : '';
+
+        pushStep({
+          stage: 'done',
+          stageLabel: 'Wynik',
+          title: 'Dodawanie zakończone!',
+          explanationHtml: doneExplain,
+          hintHtml: doneHint,
+          pieMode: 'final',
+          newLine: {
+            tag: 'Wynik końcowy',
+            isFinal: true,
+            html: `${startMathHtml}<span class="op-sym">=</span>${finalBoxHtml}`
+          }
+        });
+
+        return {
+          terms,
+          workTerms,
+          expandedTerms,
+          allSameDen,
+          commonDen,
+          denListStr,
+          simplifyGcd,
+          afterWholeN,
+          finalW,
+          finalN,
+          finalD,
+          totalImproperNum,
+          totalImproperDen,
+          decimalInfo,
+          steps
+        };
+      }
+
+      // =========================================================
+      // RENDEROWANIE KÓŁ UŁAMKOWYCH SVG
+      // =========================================================
+
+      /**
+       * Tworzy pojedyncze koło SVG podzielone na `den` równych kawałków,
+       * gdzie `sliceColors` to tablica kolorów (długości <= den) dla kolejnych wycinków.
+       */
+      function createPieSvg(den, sliceColors, size = 68) {
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('width', String(size));
+        svg.setAttribute('height', String(size));
+        svg.setAttribute('viewBox', '0 0 100 100');
+
+        const cx = 50, cy = 50, r = 45;
+
+        // Tło koła (puste kawałki)
+        const bg = document.createElementNS(svgNS, 'circle');
+        bg.setAttribute('cx', String(cx));
+        bg.setAttribute('cy', String(cy));
+        bg.setAttribute('r', String(r));
+        bg.setAttribute('fill', '#ffffff');
+        bg.setAttribute('stroke', '#94a3b8');
+        bg.setAttribute('stroke-width', '2');
+        svg.appendChild(bg);
+
+        if (den === 1) {
+          if (sliceColors.length > 0 && sliceColors[0]) {
+            bg.setAttribute('fill', sliceColors[0]);
+            bg.setAttribute('fill-opacity', '0.88');
+          }
+          return svg;
+        }
+
+        // Rysujemy wycinki kołowe
+        for (let i = 0; i < den; i++) {
+          const fillCol = sliceColors[i] || null;
+          if (!fillCol) continue;
+
+          const startAngle = (i * 2 * Math.PI) / den - Math.PI / 2;
+          const endAngle = ((i + 1) * 2 * Math.PI) / den - Math.PI / 2;
+          const x1 = cx + r * Math.cos(startAngle);
+          const y1 = cy + r * Math.sin(startAngle);
+          const x2 = cx + r * Math.cos(endAngle);
+          const y2 = cy + r * Math.sin(endAngle);
+          const largeArc = (endAngle - startAngle) > Math.PI ? 1 : 0;
+
+          const path = document.createElementNS(svgNS, 'path');
+          path.setAttribute('d', `M ${cx} ${cy} L ${x1.toFixed(2)} ${y1.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`);
+          path.setAttribute('fill', fillCol);
+          path.setAttribute('fill-opacity', '0.86');
+          svg.appendChild(path);
+        }
+
+        // Linie podziału na `den` kawałków
+        for (let i = 0; i < den; i++) {
+          const angle = (i * 2 * Math.PI) / den - Math.PI / 2;
+          const x2 = cx + r * Math.cos(angle);
+          const y2 = cy + r * Math.sin(angle);
+          const line = document.createElementNS(svgNS, 'line');
+          line.setAttribute('x1', String(cx));
+          line.setAttribute('y1', String(cy));
+          line.setAttribute('x2', x2.toFixed(2));
+          line.setAttribute('y2', y2.toFixed(2));
+          line.setAttribute('stroke', '#334155');
+          line.setAttribute('stroke-width', den > 12 ? '1.1' : '1.6');
+          svg.appendChild(line);
+        }
+
+        // Zewnętrzny obrys
+        const rim = document.createElementNS(svgNS, 'circle');
+        rim.setAttribute('cx', String(cx));
+        rim.setAttribute('cy', String(cy));
+        rim.setAttribute('r', String(r));
+        rim.setAttribute('fill', 'none');
+        rim.setAttribute('stroke', '#334155');
+        rim.setAttribute('stroke-width', '2.2');
+        svg.appendChild(rim);
+
+        return svg;
+      }
+
+      /**
+       * Renderuje grupę kół dla jednego składnika (np. 1 2/3 -> 1 pełne koło + 1 koło z 2/3).
+       */
+      function buildTermPieGroup(totalSlices, den, color, labelText) {
+        const group = document.createElement('div');
+        group.className = 'pie-group';
+
+        const circlesWrap = document.createElement('div');
+        circlesWrap.className = 'pie-circles-wrap';
+
+        const fullCircles = Math.floor(totalSlices / den);
+        const remSlices = totalSlices % den;
+        const circlesCount = Math.max(1, fullCircles + (remSlices > 0 ? 1 : 0));
+
+        for (let c = 0; c < circlesCount; c++) {
+          const filled = c < fullCircles ? den : remSlices;
+          const colorsArr = new Array(filled).fill(color);
+          circlesWrap.appendChild(createPieSvg(den, colorsArr, 62));
+        }
+
+        const lbl = document.createElement('div');
+        lbl.className = 'pie-label';
+        lbl.textContent = labelText;
+
+        group.append(circlesWrap, lbl);
+        return group;
+      }
+
+      /**
+       * Renderuje panel wizualizacji kół ułamkowych dopasowany do bieżącego kroku.
+       */
+      function renderPiesVisualization(model, step) {
+        elPiesContainer.innerHTML = '';
+        if (!state.showPies) return;
+
+        const { terms, expandedTerms, commonDen, finalW, finalN, finalD } = model;
+        const maxCirclesResult = Number(finalW + (finalN > 0n ? 1n : 0n));
+
+        // Sprawdzamy limit czytelności rysunku (wspólny mianownik <= 24 i suma <= 8 kół)
+        if (commonDen > 24n || maxCirclesResult > 8) {
+          const note = document.createElement('div');
+          note.className = 'pies-note';
+          note.innerHTML = `💡 Wizualizacja kół ułamkowych jest automatycznie ukrywana dla dużych mianowników (&gt; 24) lub sum przekraczających 8 całości, aby rysunek pozostał czytelny (tutaj wspólny mianownik to <strong>${formatInt(commonDen)}</strong>).`;
+          elPiesContainer.appendChild(note);
+          return;
+        }
+
+        const panel = document.createElement('div');
+        panel.className = 'pies-panel';
+
+        const head = document.createElement('div');
+        head.className = 'pies-panel-head';
+
+        let subtitle = '';
+        if (step.pieMode === 'original') {
+          subtitle = 'Podział kół według oryginalnych mianowników';
+        } else if (step.pieMode === 'expanded') {
+          subtitle = `Koła po rozszerzeniu — każdy podzielony na ${formatInt(commonDen)} równych części`;
+        } else if (step.pieMode === 'added') {
+          subtitle = `Połączone kawałki (wspólny podział na ${formatInt(commonDen)} części)`;
+        } else {
+          subtitle = 'Wynik końcowy na kołach ułamkowych';
+        }
+        head.innerHTML = `<span>Wizualizacja graficzna (koła ułamkowe)</span><span style="text-transform:none; font-weight:600;">${subtitle}</span>`;
+        panel.appendChild(head);
+
+        const row = document.createElement('div');
+        row.className = 'pies-row';
+
+        const denCommonNum = Number(commonDen);
+
+        // W trybach 'original' i 'expanded' rysujemy składniki obok siebie
+        if (step.pieMode === 'original') {
+          terms.forEach((t, idx) => {
+            if (idx > 0) {
+              const plus = document.createElement('span');
+              plus.className = 'pie-op';
+              plus.textContent = '+';
+              row.appendChild(plus);
+            }
+            const dNum = Number(t.d);
+            const totalSl = Number(t.w * t.d + t.n);
+            row.appendChild(buildTermPieGroup(totalSl, dNum, SLICE_COLORS[idx], plainTextFrac(t.w, t.n, t.d)));
+          });
+        } else {
+          // Składniki w podziale na wspólny mianownik
+          expandedTerms.forEach((t, idx) => {
+            if (idx > 0) {
+              const plus = document.createElement('span');
+              plus.className = 'pie-op';
+              plus.textContent = '+';
+              row.appendChild(plus);
+            }
+            const totalSl = Number(t.w * commonDen + t.n);
+            row.appendChild(buildTermPieGroup(totalSl, denCommonNum, SLICE_COLORS[idx], plainTextFrac(t.w, t.n, commonDen)));
+          });
+
+          // W krokach 'added' i 'final' dokładamy po znaku '=' połączone koła wyniku!
+          if (step.pieMode === 'added' || step.pieMode === 'final') {
+            const eq = document.createElement('span');
+            eq.className = 'pie-op';
+            eq.textContent = '=';
+            row.appendChild(eq);
+
+            const resGroup = document.createElement('div');
+            resGroup.className = 'pie-group is-result-group';
+            const circlesWrap = document.createElement('div');
+            circlesWrap.className = 'pie-circles-wrap';
+
+            // Zbieramy wszystkie kolorowe kawałki ze składników w jedną sekwencję
+            const allColoredSlices = [];
+            expandedTerms.forEach((t, idx) => {
+              const cnt = Number(t.w * commonDen + t.n);
+              for (let k = 0; k < cnt; k++) {
+                allColoredSlices.push(SLICE_COLORS[idx]);
+              }
+            });
+
+            if (allColoredSlices.length === 0) {
+              circlesWrap.appendChild(createPieSvg(denCommonNum, [], 62));
+            } else {
+              const totalResCircles = Math.ceil(allColoredSlices.length / denCommonNum);
+              for (let c = 0; c < totalResCircles; c++) {
+                const chunk = allColoredSlices.slice(c * denCommonNum, (c + 1) * denCommonNum);
+                circlesWrap.appendChild(createPieSvg(denCommonNum, chunk, 62));
+              }
+            }
+
+            const lbl = document.createElement('div');
+            lbl.className = 'pie-label';
+            lbl.style.color = '#14532d';
+            lbl.textContent = step.pieMode === 'final'
+              ? (finalN === 0n ? formatInt(finalW) : plainTextFrac(finalW, finalN, finalD))
+              : plainTextFrac(model.finalW, model.afterWholeN, commonDen);
+
+            resGroup.append(circlesWrap, lbl);
+            row.appendChild(resGroup);
+          }
+        }
+
+        panel.appendChild(row);
+        elPiesContainer.appendChild(panel);
+      }
+
+      // =========================================================
+      // RENDEROWANIE KARTY PODSUMOWANIA I GŁÓWNEGO WIDOKU
+      // =========================================================
+
+      function renderSummary(model) {
+        const { terms, finalW, finalN, finalD, totalImproperNum, totalImproperDen, decimalInfo, commonDen, denListStr, simplifyGcd, afterWholeN, allSameDen } = model;
+
+        // Pełne równanie końcowe
+        const leftHtml = joinTermsHtml(terms.map(t => mixedHtml(t.w, t.n, t.d, t.colorClass)));
+        const rightHtml = finalN === 0n
+          ? `<span class="whole-num">${formatInt(finalW)}</span>`
+          : mixedHtml(finalW, finalN, finalD);
+
+        elFinalEqBanner.innerHTML = `${leftHtml}<span class="op-sym">=</span><span class="final-result-box">${rightHtml}</span>`;
+
+        // Postać nieskracalna
+        if (finalN === 0n) {
+          elSumReduced.innerHTML = formatInt(finalW);
+          elSumReducedSub.textContent = 'liczba całkowita';
+        } else if (finalW > 0n) {
+          elSumReduced.innerHTML = mixedHtml(finalW, finalN, finalD);
+          elSumReducedSub.textContent = 'liczba mieszana (nieskracalna)';
+        } else {
+          elSumReduced.innerHTML = fracHtml(finalN, finalD);
+          elSumReducedSub.textContent = 'ułamek właściwy nieskracalny';
+        }
+
+        // Postać ułamka niewłaściwego
+        if (totalImproperDen === 1n) {
+          elSumImproper.innerHTML = fracHtml(totalImproperNum, 1n);
+        } else {
+          elSumImproper.innerHTML = fracHtml(totalImproperNum, totalImproperDen);
+        }
+
+        // Rozwinięcie dziesiętne
+        elSumDecimal.textContent = decimalInfo.text;
+        elSumDecimalSub.textContent = decimalInfo.exact ? 'rozwinięcie dokładne' : 'przybliżenie do 4 miejsc po przecinku';
+
+        // Użyte NWW i NWD
+        const nwwLine = allSameDen
+          ? `Mianownik: ${formatInt(commonDen)} (jednakowe)`
+          : `NWW(${denListStr}) = ${formatInt(commonDen)}`;
+        const nwdLine = afterWholeN === 0n
+          ? 'Skracanie: nie dotyczy (całość)'
+          : `NWD(${formatInt(afterWholeN)}, ${formatInt(commonDen)}) = ${formatInt(simplifyGcd)}`;
+
+        elSumNwwNwd.innerHTML = `<div>${nwwLine}</div><div style="margin-top:2px;">${nwdLine}</div>`;
+        elSumNwwNwdSub.textContent = simplifyGcd > 1n ? `skrócono przez ${formatInt(simplifyGcd)}` : 'brak konieczności skracania';
+      }
+
+      function renderAll() {
+        const model = state.model;
+        if (!model) return;
+
+        const maxIdx = model.steps.length - 1;
+        if (state.currentStep > maxIdx) state.currentStep = maxIdx;
+        const step = model.steps[state.currentStep];
+
+        // 1. Odznaka etapu, licznik i pasek postępu
+        elStageBadge.textContent = step.stageLabel;
+        elStageBadge.className = `stage-badge stage-${step.stage}`;
+        elStepCounter.textContent = `Krok ${state.currentStep} z ${maxIdx}`;
+        const pct = maxIdx > 0 ? Math.round((state.currentStep / maxIdx) * 100) : 100;
+        elProgressFill.style.width = `${pct}%`;
+
+        // 2. Kumulatywne wiersze równania na kartce w kratkę
+        elNotebookLines.innerHTML = '';
+        step.lines.forEach((line, idx) => {
+          const isCurrent = idx === step.lines.length - 1;
+          const row = document.createElement('div');
+          row.className = 'eq-line';
+          if (isCurrent) row.classList.add('is-active');
+          if (line.isFinal) row.classList.add('line-done');
+
+          row.innerHTML = `<span class="eq-line-tag">${line.tag}</span><div class="eq-math">${line.html}</div>`;
+          elNotebookLines.appendChild(row);
+        });
+
+        // 3. Wizualizacja kół ułamkowych SVG
+        renderPiesVisualization(model, step);
+
+        // 4. Karta wyjaśnienia dydaktycznego
+        elExplanationCard.className = `explanation-card theme-${step.stage}`;
+        elExplanationTitle.textContent = step.title;
+        const hintPart = state.showHints && step.hintHtml ? step.hintHtml : '';
+        elExplanationBody.innerHTML = step.explanationHtml + hintPart;
+
+        // 5. Stan przycisków nawigacji
+        elBtnStart.disabled = state.currentStep === 0;
+        elBtnPrev.disabled = state.currentStep === 0;
+        elBtnNext.disabled = state.currentStep >= maxIdx;
+        elBtnEnd.disabled = state.currentStep >= maxIdx;
+        elBtnPlay.disabled = maxIdx === 0;
+        updatePlayButtonUI();
+
+        // 6. Podsumowanie dolne
+        renderSummary(model);
+      }
+
+      // =========================================================
+      // WALIDACJA WEJŚCIA I OBLICZANIE
+      // =========================================================
+
+      function clearInvalidStyles() {
+        elInputs.forEach(g => {
+          g.w.classList.remove('is-invalid');
+          g.n.classList.remove('is-invalid');
+          g.d.classList.remove('is-invalid');
+        });
+      }
+
+      function showError(msg, invalidEl = null) {
+        clearInvalidStyles();
+        if (invalidEl) invalidEl.classList.add('is-invalid');
+        if (msg) {
+          elErrorBox.innerHTML = msg;
+          elErrorBox.classList.add('visible');
+        } else {
+          elErrorBox.innerHTML = '';
+          elErrorBox.classList.remove('visible');
+        }
+      }
+
+      function parseFieldInt(el, label, min, max, allowEmptyAsZero) {
+        const raw = el.value.trim().replace(/\s+/g, '');
+        if (raw === '') {
+          if (allowEmptyAsZero) return { ok: true, value: 0 };
+          return { ok: false, error: `Pole <strong>„${label}”</strong> nie może być puste.`, el };
+        }
+        if (/^-/.test(raw)) {
+          return { ok: false, error: `Pole <strong>„${label}”</strong> nie może zawierać liczby ujemnej.`, el };
+        }
+        if (!/^\d+$/.test(raw)) {
+          return { ok: false, error: `Pole <strong>„${label}”</strong> może zawierać wyłącznie cyfry (liczby całkowite).`, el };
+        }
+        const val = Number(raw);
+        if (!Number.isSafeInteger(val)) {
+          return { ok: false, error: `Liczba w polu <strong>„${label}”</strong> jest za duża.`, el };
+        }
+        if (min === 1 && val === 0) {
+          return { ok: false, error: `<strong>Mianownik nie może być równy 0 — nie dzielimy przez zero!</strong>`, el };
+        }
+        if (val < min || val > max) {
+          return { ok: false, error: `Pole <strong>„${label}”</strong> musi mieścić się w zakresie od <strong>${min}</strong> do <strong>${max}</strong>.`, el };
+        }
+        return { ok: true, value: val };
+      }
+
+      function handleCalculate() {
+        stopAutoPlay();
+        const count = state.hasThird ? 3 : 2;
+        const parsed = [];
+
+        for (let i = 0; i < count; i++) {
+          const g = elInputs[i];
+          const idxLabel = `${i + 1}. ułamka`;
+
+          const resW = parseFieldInt(g.w, `Całości ${idxLabel}`, 0, 99, true);
+          if (!resW.ok) { showError(resW.error, resW.el); return; }
+
+          const resN = parseFieldInt(g.n, `Licznik ${idxLabel}`, 0, 999, false);
+          if (!resN.ok) { showError(resN.error, resN.el); return; }
+
+          const resD = parseFieldInt(g.d, `Mianownik ${idxLabel}`, 1, 999, false);
+          if (!resD.ok) { showError(resD.error, resD.el); return; }
+
+          parsed.push({ w: resW.value, n: resN.value, d: resD.value });
+        }
+
+        showError('');
+        state.model = buildAdditionModel(parsed, state.mixedMethod);
+        state.currentStep = 0;
+        renderAll();
+      }
+
+      function applyTermsToInputs(termsArr) {
+        const wantThird = termsArr.length === 3;
+        setThirdFraction(wantThird);
+        for (let i = 0; i < termsArr.length; i++) {
+          elInputs[i].w.value = termsArr[i].w === 0 || termsArr[i].w === '' ? '' : String(termsArr[i].w);
+          elInputs[i].n.value = String(termsArr[i].n);
+          elInputs[i].d.value = String(termsArr[i].d);
+        }
+        handleCalculate();
+      }
+
+      function setThirdFraction(visible) {
+        state.hasThird = visible;
+        elPlusSep3.style.display = visible ? 'inline' : 'none';
+        elItem3.style.display = visible ? 'inline-flex' : 'none';
+        elBtnToggleThird.classList.toggle('is-remove', visible);
+        elBtnToggleThird.textContent = visible ? '× Usuń 3. ułamek' : '+ Dodaj 3. ułamek';
+      }
+
+      function setMixedMethod(method) {
+        state.mixedMethod = method;
+        const isSep = method === 'separate';
+        elMethodSeparate.classList.toggle('is-active', isSep);
+        elMethodSeparate.setAttribute('aria-selected', String(isSep));
+        elMethodImproper.classList.toggle('is-active', !isSep);
+        elMethodImproper.setAttribute('aria-selected', String(!isSep));
+        handleCalculate();
+      }
+
+      // =========================================================
+      // STEROWANIE ODTWARZANIEM
+      // =========================================================
+
+      function stopAutoPlay() {
+        if (state.playTimer !== null) {
+          clearInterval(state.playTimer);
+          state.playTimer = null;
+        }
+        state.isPlaying = false;
+        updatePlayButtonUI();
+      }
+
+      function updatePlayButtonUI() {
+        if (state.isPlaying) {
+          elBtnPlay.textContent = '⏸ Pauza';
+          elBtnPlay.classList.add('is-playing');
+        } else {
+          elBtnPlay.textContent = '▶ Odtwórz';
+          elBtnPlay.classList.remove('is-playing');
+        }
+      }
+
+      function advanceOneStep() {
+        if (!state.model) return;
+        const maxIdx = state.model.steps.length - 1;
+        if (state.currentStep < maxIdx) {
+          state.currentStep++;
+          renderAll();
+          if (state.currentStep >= maxIdx) stopAutoPlay();
+        } else {
+          stopAutoPlay();
+        }
+      }
+
+      function toggleAutoPlay() {
+        if (!state.model || state.model.steps.length <= 1) return;
+        if (state.isPlaying) {
+          stopAutoPlay();
+          return;
+        }
+        if (state.currentStep >= state.model.steps.length - 1) {
+          state.currentStep = 0;
+          renderAll();
+        }
+        state.isPlaying = true;
+        updatePlayButtonUI();
+        advanceOneStep();
+        if (state.isPlaying) {
+          state.playTimer = setInterval(advanceOneStep, SPEED_MAP[state.speedLevel].ms);
+        }
+      }
+
+      // =========================================================
+      // ZDARZENIA (EVENT LISTENERS)
+      // =========================================================
+
+      elBtnToggleThird.addEventListener('click', () => {
+        setThirdFraction(!state.hasThird);
+        handleCalculate();
+      });
+
+      elBtnCalc.addEventListener('click', handleCalculate);
+
+      elBtnRandom.addEventListener('click', () => {
+        const pool = state.hasThird ? RANDOM_POOL_3 : RANDOM_POOL_2;
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        applyTermsToInputs(pick);
+      });
+
+      elInputs.forEach(g => {
+        [g.w, g.n, g.d].forEach(inp => {
+          inp.addEventListener('input', () => inp.classList.remove('is-invalid'));
+          inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleCalculate();
+            }
+          });
+        });
+      });
+
+      document.querySelectorAll('.btn-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-preset');
+          if (PRESETS[key]) applyTermsToInputs(PRESETS[key]);
+        });
+      });
+
+      elMethodSeparate.addEventListener('click', () => setMixedMethod('separate'));
+      elMethodImproper.addEventListener('click', () => setMixedMethod('improper'));
+
+      elOptPies.addEventListener('change', () => {
+        state.showPies = elOptPies.checked;
+        renderAll();
+      });
+
+      elOptHints.addEventListener('change', () => {
+        state.showHints = elOptHints.checked;
+        renderAll();
+      });
+
+      elBtnStart.addEventListener('click', () => {
+        stopAutoPlay();
+        state.currentStep = 0;
+        renderAll();
+      });
+
+      elBtnPrev.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.currentStep > 0) {
+          state.currentStep--;
+          renderAll();
+        }
+      });
+
+      elBtnPlay.addEventListener('click', toggleAutoPlay);
+
+      elBtnNext.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.model && state.currentStep < state.model.steps.length - 1) {
+          state.currentStep++;
+          renderAll();
+        }
+      });
+
+      elBtnEnd.addEventListener('click', () => {
+        stopAutoPlay();
+        if (state.model) {
+          state.currentStep = state.model.steps.length - 1;
+          renderAll();
+        }
+      });
+
+      elSpeedSlider.addEventListener('input', () => {
+        state.speedLevel = Number(elSpeedSlider.value);
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        if (state.isPlaying) {
+          stopAutoPlay();
+          toggleAutoPlay();
+        }
+      });
+
+      // Skróty klawiszowe (←, →, Spacja) — wyłączone w polach input
+      document.addEventListener('keydown', (e) => {
+        const tag = document.activeElement ? document.activeElement.tagName : '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          elBtnNext.click();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          elBtnPrev.click();
+        } else if (e.code === 'Space') {
+          e.preventDefault();
+          toggleAutoPlay();
+        }
+      });
+
+      // Inicjalizacja aplikacji
+      window.addEventListener('load', () => {
+        elSpeedLabel.textContent = SPEED_MAP[state.speedLevel].label;
+        handleCalculate();
+      });
+    })();
+  </script>
+</body>
+</html>
